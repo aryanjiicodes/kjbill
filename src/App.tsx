@@ -42,9 +42,14 @@ export default function App() {
   const [installments, setInstallments] = useState<InstallmentPlan[]>(StorageService.getInstallmentPlans());
   const [orders, setOrders] = useState<JewelleryOrder[]>(StorageService.getOrders());
   const [inventory, setInventory] = useState<InventoryItem[]>(StorageService.getInventory());
-
-  // Active print modal
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
+
+  useEffect(() => {
+    // Initial fetch from Supabase Cloud
+    StorageService.initCloudSync().then(() => {
+      refreshAllData();
+    });
+  }, []);
 
   const refreshAllData = () => {
     setSettings(StorageService.getSettings());

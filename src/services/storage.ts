@@ -22,6 +22,7 @@ import {
   defaultOrders,
   defaultInventory,
 } from './mockData';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 const STORAGE_KEYS = {
   SETTINGS: 'kamakhya_settings',
@@ -54,13 +55,58 @@ function setStored<T>(key: string, data: T): void {
   }
 }
 
+// Background sync helper to Supabase (safe & non-blocking)
+async function syncToSupabase(table: string, payload: Record<string, any>) {
+  if (!isSupabaseConfigured) return;
+  try {
+    await supabase.from(table).upsert(payload);
+  } catch (err) {
+    console.warn(`Supabase background sync notice for table ${table}:`, err);
+  }
+}
+
 export const StorageService = {
+  // Initial cloud sync: loads from Supabase when available
+  async initCloudSync(): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    try {
+      const [
+        { data: remoteSettings },
+        { data: remoteRates },
+        { data: remoteCust },
+        { data: remoteInvoices },
+        { data: remoteAdvances },
+        { data: remoteOrders },
+        { data: remoteInventory },
+      ] = await Promise.all([
+        supabase.from('shop_settings').select('data').eq('id', 'default').maybeSingle(),
+        supabase.from('metal_rates').select('data').eq('id', 'current').maybeSingle(),
+        supabase.from('customers').select('*'),
+        supabase.from('invoices').select('data'),
+        supabase.from('advance_deposits').select('data'),
+        supabase.from('jewellery_orders').select('data'),
+        supabase.from('inventory_items').select('data'),
+      ]);
+
+      if (remoteSettings?.data) setStored(STORAGE_KEYS.SETTINGS, remoteSettings.data);
+      if (remoteRates?.data) setStored(STORAGE_KEYS.RATES, remoteRates.data);
+      if (remoteCust && remoteCust.length > 0) setStored(STORAGE_KEYS.CUSTOMERS, remoteCust);
+      if (remoteInvoices && remoteInvoices.length > 0) setStored(STORAGE_KEYS.INVOICES, remoteInvoices.map((r: any) => r.data));
+      if (remoteAdvances && remoteAdvances.length > 0) setStored(STORAGE_KEYS.ADVANCES, remoteAdvances.map((r: any) => r.data));
+      if (remoteOrders && remoteOrders.length > 0) setStored(STORAGE_KEYS.ORDERS, remoteOrders.map((r: any) => r.data));
+      if (remoteInventory && remoteInventory.length > 0) setStored(STORAGE_KEYS.INVENTORY, remoteInventory.map((r: any) => r.data));
+    } catch (e) {
+      console.warn('Supabase initial fetch skipped or offline, using local cache:', e);
+    }
+  },
+
   getSettings(): ShopSettings {
     return getStored<ShopSettings>(STORAGE_KEYS.SETTINGS, defaultSettings);
   },
 
   saveSettings(settings: ShopSettings): void {
     setStored(STORAGE_KEYS.SETTINGS, settings);
+    syncToSupabase('shop_settings', { id: 'default', data: settings });
   },
 
   getRates(): MetalRates {
@@ -73,6 +119,8 @@ export const StorageService = {
 
   saveRates(newRates: MetalRates, updatedBy: string): void {
     setStored(STORAGE_KEYS.RATES, newRates);
+    syncToSupabase('metal_rates', { id: 'current', data: newRates });
+
     const history = this.getRateHistory();
     const todayStr = new Date().toISOString().split('T')[0];
     const timeStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -123,6 +171,7 @@ export const StorageService = {
       list.unshift(customer);
     }
     setStored(STORAGE_KEYS.CUSTOMERS, list);
+    syncToSupabase('customers', customer);
     return customer;
   },
 
@@ -140,6 +189,18 @@ export const StorageService = {
       invoices.unshift(invoice);
     }
     setStored(STORAGE_KEYS.INVOICES, invoices);
+
+    // Sync to Supabase
+    syncToSupabase('invoices', {
+      id: invoice.id,
+      invoice_number: invoice.invoiceNumber,
+      date: invoice.date,
+      time: invoice.time,
+      customer_id: invoice.customerId,
+      customer_name: invoice.customerName,
+      customer_mobile: invoice.customerMobile,
+      data: invoice,
+    });
 
     // Update customer stats
     const customers = this.getCustomers();
@@ -170,12 +231,23 @@ export const StorageService = {
               date: invoice.date,
             });
             setStored(STORAGE_KEYS.ADVANCES, advances);
+            syncToSupabase('advance_deposits', {
+              id: adv.id,
+              receipt_number: adv.receiptNumber,
+              customer_id: adv.customerId,
+              customer_name: adv.customerName,
+              customer_mobile: adv.customerMobile,
+              amount: adv.amount,
+              available_balance: adv.availableBalance,
+              data: adv,
+            });
           }
         }
       }
 
       customers[custIndex] = cust;
       setStored(STORAGE_KEYS.CUSTOMERS, customers);
+      syncToSupabase('customers', cust);
     }
 
     return invoice;
@@ -199,9 +271,20 @@ export const StorageService = {
         customers[cIndex].availableAdvanceBalance = (customers[cIndex].availableAdvanceBalance || 0) + advance.amount;
         customers[cIndex].totalPaymentsReceived = (customers[cIndex].totalPaymentsReceived || 0) + advance.amount;
         setStored(STORAGE_KEYS.CUSTOMERS, customers);
+        syncToSupabase('customers', customers[cIndex]);
       }
     }
     setStored(STORAGE_KEYS.ADVANCES, list);
+    syncToSupabase('advance_deposits', {
+      id: advance.id,
+      receipt_number: advance.receiptNumber,
+      customer_id: advance.customerId,
+      customer_name: advance.customerName,
+      customer_mobile: advance.customerMobile,
+      amount: advance.amount,
+      available_balance: advance.availableBalance,
+      data: advance,
+    });
     return advance;
   },
 
@@ -218,6 +301,12 @@ export const StorageService = {
       list.unshift(plan);
     }
     setStored(STORAGE_KEYS.INSTALLMENTS, list);
+    syncToSupabase('installment_plans', {
+      id: plan.id,
+      plan_number: plan.planNumber,
+      customer_id: plan.customerId,
+      data: plan,
+    });
     return plan;
   },
 
@@ -234,7 +323,6 @@ export const StorageService = {
     if (plan.remainingAmount <= 0) {
       plan.status = 'Completed';
     } else {
-      // Advance next due date by 1 month
       const currentDue = new Date(plan.nextDueDate);
       if (!isNaN(currentDue.getTime())) {
         currentDue.setMonth(currentDue.getMonth() + 1);
@@ -244,6 +332,12 @@ export const StorageService = {
 
     list[index] = plan;
     setStored(STORAGE_KEYS.INSTALLMENTS, list);
+    syncToSupabase('installment_plans', {
+      id: plan.id,
+      plan_number: plan.planNumber,
+      customer_id: plan.customerId,
+      data: plan,
+    });
 
     // Update customer total payments
     const customers = this.getCustomers();
@@ -251,6 +345,7 @@ export const StorageService = {
     if (cIndex >= 0) {
       customers[cIndex].totalPaymentsReceived = (customers[cIndex].totalPaymentsReceived || 0) + payment.amount;
       setStored(STORAGE_KEYS.CUSTOMERS, customers);
+      syncToSupabase('customers', customers[cIndex]);
     }
 
     return plan;
@@ -269,6 +364,12 @@ export const StorageService = {
       list.unshift(order);
     }
     setStored(STORAGE_KEYS.ORDERS, list);
+    syncToSupabase('jewellery_orders', {
+      id: order.id,
+      order_number: order.orderNumber,
+      customer_id: order.customerId,
+      data: order,
+    });
     return order;
   },
 
@@ -282,6 +383,12 @@ export const StorageService = {
       list[index].notes = (list[index].notes ? list[index].notes + ' | ' : '') + notes;
     }
     setStored(STORAGE_KEYS.ORDERS, list);
+    syncToSupabase('jewellery_orders', {
+      id: list[index].id,
+      order_number: list[index].orderNumber,
+      customer_id: list[index].customerId,
+      data: list[index],
+    });
     return list[index];
   },
 
@@ -298,6 +405,11 @@ export const StorageService = {
       list.unshift(item);
     }
     setStored(STORAGE_KEYS.INVENTORY, list);
+    syncToSupabase('inventory_items', {
+      id: item.id,
+      tag_number: item.tagNumber,
+      data: item,
+    });
     return item;
   },
 

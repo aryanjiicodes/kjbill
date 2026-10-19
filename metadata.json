@@ -1,0 +1,6 @@
+{
+  "name": "Kamakhya Jewellers — Jewellery Billing & Management Software",
+  "description": "Professional GST jewellery billing, customer ledger, advance deposit tracking, monthly installment passbooks, and A4 tax invoice printing for Kamakhya Jewellers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

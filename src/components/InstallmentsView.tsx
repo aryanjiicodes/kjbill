@@ -790,22 +790,6 @@ export const InstallmentsView: React.FC<Props> = ({
                   </table>
                 </div>
 
-                {/* Balance & Next Due Status Strip */}
-                <div className="grid grid-cols-2 gap-3 border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-amber-50/50 print:bg-transparent">
-                  <div>
-                    <span className="font-semibold text-stone-600">Remaining Plan Balance: </span>
-                    <span className="font-mono font-bold text-rose-700 text-sm">
-                      {formatINR(selectedSlipForPrint.plan.remainingAmount)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-stone-600">Next Due Date: </span>
-                    <span className="font-mono font-bold text-amber-950">
-                      {selectedSlipForPrint.plan.nextDueDate}
-                    </span>
-                  </div>
-                </div>
-
                 {/* Passbook Terms & Instructions */}
                 <div className="text-[9.5px] text-stone-600 space-y-0.5 border-t border-stone-200 pt-2.5 leading-tight">
                   <p>

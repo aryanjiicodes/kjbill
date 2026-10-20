@@ -528,6 +528,61 @@ export const StorageService = {
     return `${prefix}/ORD/${String(count).padStart(3, '0')}`;
   },
 
+  async resetTransactions(clearCloud = true): Promise<{ success: boolean; message: string }> {
+    setStored(STORAGE_KEYS.INVOICES, []);
+    setStored(STORAGE_KEYS.CUSTOMERS, []);
+    setStored(STORAGE_KEYS.ADVANCES, []);
+    setStored(STORAGE_KEYS.INSTALLMENTS, []);
+    setStored(STORAGE_KEYS.ORDERS, []);
+    setStored(STORAGE_KEYS.INVENTORY, []);
+
+    if (clearCloud && isSupabaseConfigured) {
+      try {
+        await Promise.allSettled([
+          supabase.from('invoices').delete().neq('id', '___none___'),
+          supabase.from('customers').delete().neq('id', '___none___'),
+          supabase.from('advances').delete().neq('id', '___none___'),
+          supabase.from('installment_plans').delete().neq('id', '___none___'),
+          supabase.from('jewellery_orders').delete().neq('id', '___none___'),
+          supabase.from('inventory_items').delete().neq('id', '___none___'),
+        ]);
+      } catch (err) {
+        console.warn('Cloud reset notice:', err);
+      }
+    }
+
+    return {
+      success: true,
+      message: 'All bills, customer records, advances, and installment schemes have been cleared.',
+    };
+  },
+
+  async fullFactoryReset(clearCloud = true): Promise<{ success: boolean; message: string }> {
+    localStorage.clear();
+
+    if (clearCloud && isSupabaseConfigured) {
+      try {
+        await Promise.allSettled([
+          supabase.from('invoices').delete().neq('id', '___none___'),
+          supabase.from('customers').delete().neq('id', '___none___'),
+          supabase.from('advances').delete().neq('id', '___none___'),
+          supabase.from('installment_plans').delete().neq('id', '___none___'),
+          supabase.from('jewellery_orders').delete().neq('id', '___none___'),
+          supabase.from('inventory_items').delete().neq('id', '___none___'),
+          supabase.from('shop_settings').delete().neq('id', '___none___'),
+          supabase.from('metal_rates').delete().neq('id', '___none___'),
+        ]);
+      } catch (err) {
+        console.warn('Cloud factory wipe notice:', err);
+      }
+    }
+
+    return {
+      success: true,
+      message: 'Showroom database has been reset to factory defaults.',
+    };
+  },
+
   resetAll(): void {
     localStorage.clear();
   },

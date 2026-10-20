@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShopSettings, MetalRates, MetalRateHistoryEntry } from '../types';
 import { StorageService } from '../services/storage';
 import { fetchLiveBullionRates, getRateTrend } from '../services/goldApi';
-import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle, CheckCircle2, X, TrendingUp, Globe, Sparkles } from 'lucide-react';
+import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle, CheckCircle2, X, TrendingUp, Globe, Sparkles, Trash2, RotateCcw, AlertOctagon } from 'lucide-react';
 
 interface Props {
   settings: ShopSettings;
@@ -108,12 +108,37 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
     message: null,
   });
 
+  const [resetModal, setResetModal] = useState<'transactions' | 'factory' | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetNotice, setResetNotice] = useState<string | null>(null);
+
   useEffect(() => {
     if (showSaveModal) {
       const timer = setTimeout(() => setShowSaveModal(false), 4500);
       return () => clearTimeout(timer);
     }
   }, [showSaveModal]);
+
+  const handleConfirmReset = async () => {
+    if (!resetModal) return;
+    setIsResetting(true);
+    try {
+      if (resetModal === 'transactions') {
+        const res = await StorageService.resetTransactions(true);
+        onRefresh();
+        setResetNotice(res.message);
+      } else {
+        const res = await StorageService.fullFactoryReset(true);
+        onRefresh();
+        setResetNotice(res.message);
+      }
+    } catch (err: any) {
+      alert(`Reset error: ${err.message || 'Failed to complete reset'}`);
+    } finally {
+      setIsResetting(false);
+      setResetModal(null);
+    }
+  };
 
   const handleTestDatabase = async () => {
     setDbStatus({ testing: true, result: null });
@@ -877,6 +902,127 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
           </div>
         )}
       </div>
+
+      {/* 4. Danger Zone: Reset Business Data */}
+      <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+          <div className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-rose-600" />
+            <h2 className="text-sm font-bold text-rose-900 uppercase tracking-wider">
+              Danger Zone: Reset Showroom Data
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+            Irreversible Action
+          </span>
+        </div>
+
+        <p className="text-xs text-stone-600">
+          Clean up test data and reset transaction records (all tax invoices, customers, advance receipts, monthly installment schemes, orders, and stock). You can choose to keep your shop configuration (names, phone, bank account, and GSTIN) or perform a full factory reset.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setResetModal('transactions')}
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-xs transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Reset All Transactions (Keep Shop Settings)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setResetModal('factory')}
+            className="px-4 py-2.5 bg-stone-100 hover:bg-rose-50 text-rose-800 hover:text-rose-900 font-bold text-xs rounded-xl flex items-center gap-2 border border-rose-300 transition-colors"
+          >
+            <AlertOctagon className="w-4 h-4 text-rose-600" />
+            <span>Full Factory Reset (Wipe Everything)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Confirmation Modal for Reset Data */}
+      {resetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-rose-200 max-w-md w-full p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <AlertTriangle className="w-9 h-9" />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-bold text-stone-900">
+                {resetModal === 'transactions'
+                  ? 'Reset All Transaction Records?'
+                  : 'Full Factory Reset Everything?'}
+              </h3>
+              <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                {resetModal === 'transactions'
+                  ? 'This will permanently delete all finalized GST invoices, customer ledgers, advance bookings, monthly installment schemes, orders, and inventory. Your showroom details, address, and bank accounts will be safely preserved.'
+                  : 'WARNING: This will completely wipe all showroom data, including shop settings, rates, security PINs, customers, invoices, and cloud database records.'}
+              </p>
+            </div>
+
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-left text-xs text-rose-900 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Confirm you want to proceed:</span>
+              </div>
+              <p className="text-[11px] text-rose-800">
+                This action is immediate and cannot be recovered unless you previously saved a JSON backup.
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setResetModal(null)}
+                disabled={isResetting}
+                className="flex-1 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReset}
+                disabled={isResetting}
+                className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-1.5"
+              >
+                {isResetting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Resetting...</span>
+                  </>
+                ) : (
+                  <span>Yes, Delete & Reset</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Success Notice Modal */}
+      {resetNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 max-w-sm w-full p-6 text-center space-y-4">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-stone-900">Database Reset Complete!</h3>
+              <p className="text-xs text-stone-600 mt-1">{resetNotice}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setResetNotice(null)}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors"
+            >
+              OK, Continue
+            </button>
+          </div>
+        </div>
+      )}
       {/* Settings Saved Confirmation Modal */}
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">

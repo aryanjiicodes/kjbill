@@ -33,12 +33,14 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
     return (
       <div
         ref={ref}
-        className="w-full max-w-[210mm] min-h-[296mm] bg-white text-stone-900 mx-auto p-6 sm:p-7 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-3 print:w-full print:max-w-none text-[11px] leading-tight relative overflow-hidden"
+        className="w-full max-w-[210mm] min-h-[285mm] h-[285mm] print:h-[283mm] print:min-h-0 print:max-h-[283mm] bg-white text-stone-900 mx-auto p-6 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-2.5 print:w-full print:max-w-none text-[11px] leading-tight relative overflow-hidden flex flex-col justify-between"
         style={{
           boxSizing: 'border-box',
           overflow: 'hidden',
           WebkitPrintColorAdjust: 'exact',
           printColorAdjust: 'exact',
+          breakInside: 'avoid',
+          pageBreakInside: 'avoid',
         }}
       >
         {/* Background Watermark (Increased opacity & visibility, keeping all tables & text fully sharp) */}
@@ -51,7 +53,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
         </div>
 
         {/* Content Wrapper */}
-        <div className="relative z-10 flex flex-col justify-between min-h-full">
+        <div className="relative z-10 flex flex-col justify-between h-full flex-1">
           <div>
             {/* Top Header */}
             <div className="border-b-2 border-stone-800 pb-2.5 mb-2.5">
@@ -457,7 +459,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
           </div>
 
           {/* Declarations & Signature Footer */}
-          <div className="grid grid-cols-12 gap-3 pt-1 border-t border-stone-200">
+          <div className="grid grid-cols-12 gap-3 pt-2 border-t border-stone-200 mt-auto">
             {/* Declaration and Terms */}
             <div className="col-span-8 pr-3 flex flex-col justify-between">
               <div>

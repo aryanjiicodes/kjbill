@@ -703,7 +703,14 @@ export const JewelleryOrdersView: React.FC<Props> = ({
           {/* Printable A4 Container */}
           <div
             id="jewellery-order-print-area"
-            className="relative w-full max-w-[210mm] min-h-[297mm] bg-white text-stone-900 p-8 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-6 mx-auto text-xs overflow-hidden"
+            className="relative w-full max-w-[210mm] min-h-[285mm] h-[285mm] print:h-[283mm] print:min-h-0 print:max-h-[283mm] bg-white text-stone-900 p-6 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-2.5 mx-auto text-xs overflow-hidden flex flex-col justify-between"
+            style={{
+              boxSizing: 'border-box',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+              breakInside: 'avoid',
+              pageBreakInside: 'avoid',
+            }}
           >
             {/* Background Watermark */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -715,7 +722,7 @@ export const JewelleryOrdersView: React.FC<Props> = ({
             </div>
 
             {/* Content Wrapper */}
-            <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
+            <div className="relative z-10 flex flex-col justify-between h-full flex-1">
               <div>
                 {/* Header */}
                 <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
@@ -865,7 +872,7 @@ export const JewelleryOrdersView: React.FC<Props> = ({
               </div>
 
               {/* Signatures Area matching main bill */}
-              <div className="grid grid-cols-12 gap-3 pt-4 border-t border-stone-300">
+              <div className="grid grid-cols-12 gap-3 pt-3 border-t border-stone-300 mt-auto">
                 <div className="col-span-6 flex flex-col justify-end">
                   <div className="w-44 border-b border-stone-400 mb-1"></div>
                   <span className="text-[10px] text-stone-500 font-medium">Customer Signature / Order Confirmed</span>

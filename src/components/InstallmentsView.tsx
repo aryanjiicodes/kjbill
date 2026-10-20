@@ -596,11 +596,13 @@ export const InstallmentsView: React.FC<Props> = ({
 
           {/* Printable Sheet */}
           <div
-            className="w-full max-w-[210mm] min-h-[296mm] bg-white text-stone-900 p-6 sm:p-7 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-4 mx-auto relative overflow-hidden text-[11px] leading-tight flex flex-col justify-between"
+            className="w-full max-w-[210mm] min-h-[285mm] h-[285mm] print:h-[283mm] print:min-h-0 print:max-h-[283mm] bg-white text-stone-900 p-6 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-2.5 mx-auto relative overflow-hidden text-[11px] leading-tight flex flex-col justify-between"
             style={{
               boxSizing: 'border-box',
               WebkitPrintColorAdjust: 'exact',
               printColorAdjust: 'exact',
+              breakInside: 'avoid',
+              pageBreakInside: 'avoid',
             }}
           >
             {/* Background Watermark */}
@@ -612,7 +614,7 @@ export const InstallmentsView: React.FC<Props> = ({
               />
             </div>
 
-            <div className="relative z-10 flex flex-col justify-between h-full space-y-3">
+            <div className="relative z-10 flex flex-col justify-between h-full flex-1">
               <div>
                 {/* Header with safe vertical spacing for Hindi text */}
                 <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
@@ -817,7 +819,7 @@ export const InstallmentsView: React.FC<Props> = ({
               </div>
 
               {/* Signatures Footer matching main bill */}
-              <div className="grid grid-cols-12 gap-3 pt-3 border-t border-stone-300">
+              <div className="grid grid-cols-12 gap-3 pt-2.5 border-t border-stone-300 mt-auto">
                 <div className="col-span-6 flex flex-col justify-end">
                   <div className="w-44 border-b border-stone-400 mb-1"></div>
                   <span className="text-[10px] text-stone-500 font-medium">Customer Signature / धारक के हस्ताक्षर</span>

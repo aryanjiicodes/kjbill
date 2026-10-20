@@ -38,12 +38,12 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
           printColorAdjust: 'exact',
         }}
       >
-        {/* Background Watermark (Soft opacity on back, keeping all tables & text fully sharp) */}
+        {/* Background Watermark (Increased opacity & visibility, keeping all tables & text fully sharp) */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
           <img
             src={watermarkImg}
             alt="Watermark"
-            className="w-[380px] max-w-[70%] opacity-[0.075] select-none object-contain print:opacity-[0.075]"
+            className="w-[420px] max-w-[75%] opacity-[0.18] select-none object-contain print:opacity-[0.18]"
           />
         </div>
 
@@ -104,7 +104,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
             {/* Customer & Invoice Meta Grid */}
             <div className="grid grid-cols-12 gap-2 mb-2.5">
               {/* Receiver / Billed To */}
-              <div className="col-span-8 border border-stone-300 rounded-xs p-2.5 bg-white/90">
+              <div className="col-span-8 border border-stone-300 rounded-xs p-2.5 bg-white/50 print:bg-transparent">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-stone-600 border-b border-stone-200 pb-1 mb-1.5 flex justify-between items-center">
                   <span>Details of Receiver | Billed to:</span>
                   <span className="text-[9px] font-bold font-mono text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
@@ -161,7 +161,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
             </div>
 
             {/* Products Table with Mkg % and Other Charges */}
-            <div className="border border-stone-300 rounded-xs overflow-hidden mb-2.5 bg-white/95">
+            <div className="border border-stone-300 rounded-xs overflow-hidden mb-2.5 bg-white/50 print:bg-transparent">
               <table className="w-full text-left border-collapse text-[10.5px]">
                 <thead>
                   <tr className="bg-stone-100 print:bg-stone-100 border-b border-stone-300 text-stone-800 font-bold">
@@ -289,7 +289,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
             </div>
 
             {/* Lower Summary Section */}
-            <div className="grid grid-cols-12 gap-2.5 border border-stone-300 rounded-xs p-2.5 mb-2.5 bg-white/95">
+            <div className="grid grid-cols-12 gap-2.5 border border-stone-300 rounded-xs p-2.5 mb-2.5 bg-white/50 print:bg-transparent">
               {/* Left: Bank Details */}
               <div className="col-span-5 border-r border-stone-200 pr-2">
                 <div className="text-[9.5px] font-bold uppercase tracking-wider text-stone-600 mb-1">

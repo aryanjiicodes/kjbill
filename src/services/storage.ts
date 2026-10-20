@@ -139,8 +139,26 @@ export const StorageService = {
   },
 
   saveRates(newRates: MetalRates, updatedBy: string): void {
-    setStored(STORAGE_KEYS.RATES, newRates);
-    syncToSupabase('metal_rates', { id: 'current', data: newRates });
+    const existing = this.getRates();
+
+    // Preserve or calculate previousRates so trends (🔼 / 🔽) are preserved
+    const computedPrevious = {
+      gold24k: (existing.gold24k && existing.gold24k !== newRates.gold24k) ? existing.gold24k : (newRates.previousRates?.gold24k ?? existing.previousRates?.gold24k),
+      gold22k: (existing.gold22k && existing.gold22k !== newRates.gold22k) ? existing.gold22k : (newRates.previousRates?.gold22k ?? existing.previousRates?.gold22k),
+      gold18k: (existing.gold18k && existing.gold18k !== newRates.gold18k) ? existing.gold18k : (newRates.previousRates?.gold18k ?? existing.previousRates?.gold18k),
+      gold14k: (existing.gold14k && existing.gold14k !== newRates.gold14k) ? existing.gold14k : (newRates.previousRates?.gold14k ?? existing.previousRates?.gold14k),
+      silver999: (existing.silver999 && existing.silver999 !== newRates.silver999) ? existing.silver999 : (newRates.previousRates?.silver999 ?? existing.previousRates?.silver999),
+      silver925: (existing.silver925 && existing.silver925 !== newRates.silver925) ? existing.silver925 : (newRates.previousRates?.silver925 ?? existing.previousRates?.silver925),
+      platinum: (existing.platinum && existing.platinum !== newRates.platinum) ? existing.platinum : (newRates.previousRates?.platinum ?? existing.previousRates?.platinum),
+    };
+
+    const finalRates: MetalRates = {
+      ...newRates,
+      previousRates: newRates.previousRates || computedPrevious,
+    };
+
+    setStored(STORAGE_KEYS.RATES, finalRates);
+    syncToSupabase('metal_rates', { id: 'current', data: finalRates });
 
     const history = this.getRateHistory();
     const todayStr = new Date().toISOString().split('T')[0];

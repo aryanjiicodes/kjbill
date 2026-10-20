@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShopSettings, MetalRates, MetalRateHistoryEntry } from '../types';
 import { StorageService } from '../services/storage';
-import { fetchLiveBullionRates } from '../services/goldApi';
+import { fetchLiveBullionRates, getRateTrend } from '../services/goldApi';
 import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle, CheckCircle2, X, TrendingUp, Globe, Sparkles } from 'lucide-react';
 
 interface Props {
@@ -18,6 +18,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
   const currentRates = rates || StorageService.getRates();
   const [rateMode, setRateMode] = useState<'api' | 'manual'>(currentRates.rateMode || 'api');
   const [apiSource, setApiSource] = useState<'default' | 'ibja'>(currentRates.apiSource || 'default');
+  const [autoSyncIntervalMinutes, setAutoSyncIntervalMinutes] = useState<number>(currentRates.autoSyncIntervalMinutes || 5);
   const [gold24k, setGold24k] = useState<number>(currentRates.gold24k || 14920);
   const [gold22k, setGold22k] = useState<number>(currentRates.gold22k || 13677);
   const [gold18k, setGold18k] = useState<number>(currentRates.gold18k || 11190);
@@ -39,6 +40,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
     if (rates) {
       setRateMode(rates.rateMode || 'api');
       setApiSource(rates.apiSource || 'default');
+      setAutoSyncIntervalMinutes(rates.autoSyncIntervalMinutes || 5);
       setGold24k(rates.gold24k);
       setGold22k(rates.gold22k);
       setGold18k(rates.gold18k);
@@ -72,6 +74,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
         silver925: res.silver925,
         rateMode: 'api',
         apiSource,
+        autoSyncIntervalMinutes,
         updatedAt: res.timestamp,
         updatedBy: `Bullion API (${res.provider})`,
       };
@@ -139,6 +142,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
       silver925,
       rateMode,
       apiSource,
+      autoSyncIntervalMinutes,
       updatedAt: new Date().toISOString(),
       updatedBy: rateMode === 'api' ? 'Bullion API' : formData.ownerName || 'Manual Entry',
     };
@@ -347,18 +351,36 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
             <div className="space-y-4 bg-emerald-50/40 border border-emerald-200/80 rounded-xl p-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
-                      API Provider & Source:
-                    </span>
-                    <select
-                      value={apiSource}
-                      onChange={(e) => setApiSource(e.target.value as any)}
-                      className="px-2.5 py-1 text-xs bg-white border border-emerald-300 rounded-lg font-medium text-stone-800 focus:outline-none"
-                    >
-                      <option value="default">All India Bullion (Surat - Smart API)</option>
-                      <option value="ibja">Official IBJA (ibjarates.com)</option>
-                    </select>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                        API Source:
+                      </span>
+                      <select
+                        value={apiSource}
+                        onChange={(e) => setApiSource(e.target.value as any)}
+                        className="px-2.5 py-1 text-xs bg-white border border-emerald-300 rounded-lg font-medium text-stone-800 focus:outline-none"
+                      >
+                        <option value="default">All India Bullion (Surat - Smart API)</option>
+                        <option value="ibja">Official IBJA (ibjarates.com)</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                        Auto-Sync:
+                      </span>
+                      <select
+                        value={autoSyncIntervalMinutes}
+                        onChange={(e) => setAutoSyncIntervalMinutes(parseInt(e.target.value) || 5)}
+                        className="px-2.5 py-1 text-xs bg-white border border-emerald-300 rounded-lg font-medium text-stone-800 focus:outline-none"
+                      >
+                        <option value="5">Every 5 Minutes (Recommended)</option>
+                        <option value="10">Every 10 Minutes</option>
+                        <option value="15">Every 15 Minutes</option>
+                        <option value="0">Disabled (Manual Only)</option>
+                      </select>
+                    </div>
                   </div>
                   <p className="text-[11px] text-emerald-800 font-mono">
                     Endpoint: https://custom-gold-api-pu4h.onrender.com/{apiSource === 'ibja' ? 'gold/ibja' : 'gold'}
@@ -376,6 +398,14 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
                 </button>
               </div>
 
+              {/* Rate-limit Safe Protection Notice */}
+              <div className="text-[11px] text-emerald-900 bg-emerald-100/70 px-3 py-1.5 rounded-lg border border-emerald-300/80 flex items-center gap-1.5">
+                <span className="text-xs">🛡️</span>
+                <span>
+                  <strong>Safe Auto-Poll Protection Active:</strong> Calls the live API every {autoSyncIntervalMinutes > 0 ? `${autoSyncIntervalMinutes} minutes` : 'manual check'} only when your showroom tab is active. Prevents rate-limits so your server and billing stay fast and smooth.
+                </span>
+              </div>
+
               {rateNotice && (
                 <div className="bg-emerald-100 text-emerald-900 text-xs px-3 py-2 rounded-lg border border-emerald-300 flex items-center gap-1.5 font-medium">
                   <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0" />
@@ -390,29 +420,61 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
                 </div>
               )}
 
-              {/* Live Preview Cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-                <div className="bg-white p-3 rounded-xl border border-stone-200">
-                  <span className="text-[10px] text-stone-500 font-semibold block uppercase">Gold 24K (Pure)</span>
-                  <span className="text-base font-bold font-mono text-amber-950">₹{gold24k}/g</span>
-                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold24k * 10).toLocaleString('en-IN')}/10g</span>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-amber-300 bg-amber-50/20">
-                  <span className="text-[10px] text-amber-800 font-semibold block uppercase">Gold 22K (916)</span>
-                  <span className="text-base font-bold font-mono text-amber-900">₹{gold22k}/g</span>
-                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold22k * 10).toLocaleString('en-IN')}/10g</span>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-stone-200">
-                  <span className="text-[10px] text-stone-500 font-semibold block uppercase">Gold 18K (750)</span>
-                  <span className="text-base font-bold font-mono text-stone-800">₹{gold18k}/g</span>
-                  <span className="text-[10px] text-stone-400 block mt-0.5">75% Purity</span>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-stone-200">
-                  <span className="text-[10px] text-stone-500 font-semibold block uppercase">Silver 999 (Pure)</span>
-                  <span className="text-base font-bold font-mono text-slate-800">₹{silver999}/g</span>
-                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{(silver999 * 1000).toLocaleString('en-IN')}/kg</span>
-                </div>
-              </div>
+              {/* Live Preview Cards with Up / Down Emojis */}
+              {(() => {
+                const trend24k = getRateTrend(gold24k, rates?.previousRates?.gold24k);
+                const trend22k = getRateTrend(gold22k, rates?.previousRates?.gold22k);
+                const trend18k = getRateTrend(gold18k, rates?.previousRates?.gold18k);
+                const trendSilver = getRateTrend(silver999, rates?.previousRates?.silver999);
+
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                    <div className="bg-white p-3 rounded-xl border border-stone-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-stone-500 font-semibold uppercase">Gold 24K (Pure)</span>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trend24k.bgClass} ${trend24k.borderClass}`}>
+                          {trend24k.emoji} {trend24k.diff > 0 ? trend24k.diffText : ''}
+                        </span>
+                      </div>
+                      <span className="text-base font-bold font-mono text-amber-950">₹{gold24k}/g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold24k * 10).toLocaleString('en-IN')}/10g</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-amber-300 bg-amber-50/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-amber-800 font-semibold uppercase">Gold 22K (916)</span>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trend22k.bgClass} ${trend22k.borderClass}`}>
+                          {trend22k.emoji} {trend22k.diff > 0 ? trend22k.diffText : ''}
+                        </span>
+                      </div>
+                      <span className="text-base font-bold font-mono text-amber-900">₹{gold22k}/g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold22k * 10).toLocaleString('en-IN')}/10g</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-stone-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-stone-500 font-semibold uppercase">Gold 18K (750)</span>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trend18k.bgClass} ${trend18k.borderClass}`}>
+                          {trend18k.emoji} {trend18k.diff > 0 ? trend18k.diffText : ''}
+                        </span>
+                      </div>
+                      <span className="text-base font-bold font-mono text-stone-800">₹{gold18k}/g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">75% Purity</span>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl border border-stone-200">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-stone-500 font-semibold uppercase">Silver 999 (Pure)</span>
+                        <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trendSilver.bgClass} ${trendSilver.borderClass}`}>
+                          {trendSilver.emoji} {trendSilver.diff > 0 ? trendSilver.diffText : ''}
+                        </span>
+                      </div>
+                      <span className="text-base font-bold font-mono text-slate-800">₹{silver999}/g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{(silver999 * 1000).toLocaleString('en-IN')}/kg</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

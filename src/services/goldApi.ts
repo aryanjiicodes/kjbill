@@ -69,3 +69,53 @@ export async function fetchLiveBullionRates(sourceEndpoint: 'default' | 'ibja' =
     throw new Error(err.name === 'AbortError' ? 'Gold API request timed out' : err.message || 'Network error fetching gold rates');
   }
 }
+
+export type TrendDirection = 'up' | 'down' | 'same';
+
+export interface RateTrendInfo {
+  direction: TrendDirection;
+  emoji: string;         // '🔼' | '🔽' | '➖'
+  diff: number;          // Absolute difference
+  diffText: string;      // "+₹15" or "-₹20" or "0"
+  colorClass: string;    // 'text-emerald-400' | 'text-rose-400' | 'text-stone-400'
+  bgClass: string;       // 'bg-emerald-950/60 text-emerald-300' etc
+  borderClass: string;   // 'border-emerald-700/60' etc
+}
+
+export function getRateTrend(current: number, previous?: number): RateTrendInfo {
+  if (previous === undefined || previous === null || previous === current || previous === 0) {
+    return {
+      direction: 'same',
+      emoji: '➖',
+      diff: 0,
+      diffText: '0',
+      colorClass: 'text-stone-400',
+      bgClass: 'bg-stone-800/60 text-stone-300',
+      borderClass: 'border-stone-700',
+    };
+  }
+
+  if (current > previous) {
+    const diff = Math.round((current - previous) * 10) / 10;
+    return {
+      direction: 'up',
+      emoji: '🔼',
+      diff,
+      diffText: `+₹${diff}`,
+      colorClass: 'text-emerald-400',
+      bgClass: 'bg-emerald-950/60 text-emerald-300',
+      borderClass: 'border-emerald-700/60',
+    };
+  } else {
+    const diff = Math.round((previous - current) * 10) / 10;
+    return {
+      direction: 'down',
+      emoji: '🔽',
+      diff,
+      diffText: `-₹${diff}`,
+      colorClass: 'text-rose-400',
+      bgClass: 'bg-rose-950/60 text-rose-300',
+      borderClass: 'border-rose-700/60',
+    };
+  }
+}

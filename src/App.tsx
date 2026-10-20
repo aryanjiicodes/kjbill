@@ -66,11 +66,33 @@ export default function App() {
     });
   }, []);
 
-  const handleSyncRatesFromApi = async () => {
+  const handleSyncRatesFromApi = async (isBackground = false) => {
+    if (isSyncingRates) return;
+
+    const current = StorageService.getRates();
+    if (current.rateMode === 'manual') return;
+
+    // In background auto-call, skip if already refreshed recently
+    const intervalMinutes = current.autoSyncIntervalMinutes || 5;
+    if (isBackground && current.updatedAt) {
+      const elapsedMs = Date.now() - new Date(current.updatedAt).getTime();
+      if (!isNaN(elapsedMs) && elapsedMs < (intervalMinutes * 60 * 1000) - 20000) {
+        return;
+      }
+    }
+
     setIsSyncingRates(true);
     try {
-      const current = StorageService.getRates();
       const live = await fetchLiveBullionRates(current.apiSource || 'default');
+      const previousRates = {
+        gold24k: current.gold24k !== live.gold24k ? current.gold24k : current.previousRates?.gold24k,
+        gold22k: current.gold22k !== live.gold22k ? current.gold22k : current.previousRates?.gold22k,
+        gold18k: current.gold18k !== live.gold18k ? current.gold18k : current.previousRates?.gold18k,
+        gold14k: current.gold14k !== live.gold14k ? current.gold14k : current.previousRates?.gold14k,
+        silver999: current.silver999 !== live.silver999 ? current.silver999 : current.previousRates?.silver999,
+        silver925: current.silver925 !== live.silver925 ? current.silver925 : current.previousRates?.silver925,
+      };
+
       const updatedRates: MetalRates = {
         ...current,
         gold24k: live.gold24k,
@@ -82,6 +104,7 @@ export default function App() {
         updatedAt: live.timestamp,
         updatedBy: `Bullion API (${live.provider})`,
         rateMode: 'api',
+        previousRates,
       };
       StorageService.saveRates(updatedRates, `Bullion API (${live.provider})`);
       setRates(updatedRates);
@@ -92,6 +115,32 @@ export default function App() {
       setIsSyncingRates(false);
     }
   };
+
+  // Background recurring timer (every 5 to 10 mins) with safe rate-limiting
+  useEffect(() => {
+    const intervalMinutes = rates.autoSyncIntervalMinutes || 5;
+    if (rates.rateMode === 'manual' || intervalMinutes <= 0) return;
+
+    const intervalMs = Math.max(5, intervalMinutes) * 60 * 1000;
+
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        handleSyncRatesFromApi(true);
+      }
+    }, intervalMs);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleSyncRatesFromApi(true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [rates.autoSyncIntervalMinutes, rates.rateMode, rates.apiSource]);
 
   const refreshAllData = () => {
     setSettings(StorageService.getSettings());

@@ -37,6 +37,16 @@ export interface MetalRates {
   updatedBy: string;
   rateMode?: 'api' | 'manual';
   apiSource?: 'default' | 'ibja';
+  autoSyncIntervalMinutes?: number; // 5, 10, or 15 (default: 5)
+  previousRates?: {
+    gold24k?: number;
+    gold22k?: number;
+    gold18k?: number;
+    gold14k?: number;
+    silver999?: number;
+    silver925?: number;
+    platinum?: number;
+  };
 }
 
 export interface MetalRateHistoryEntry {

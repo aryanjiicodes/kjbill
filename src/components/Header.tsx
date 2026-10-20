@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserRole, ShopSettings, MetalRates } from '../types';
 import { Plus, ShieldCheck, User, Sparkles, TrendingUp, Lock, RefreshCw } from 'lucide-react';
+import { getRateTrend } from '../services/goldApi';
 
 export type NavTab =
   | 'dashboard'
@@ -68,25 +69,107 @@ export const Header: React.FC<Props> = ({
           >
             {rates.rateMode === 'manual' ? 'MANUAL' : 'LIVE BULLION API'}
           </span>
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400">24K:</span>
-            <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold24k}/g</span>
-          </div>
-          <span className="text-stone-700">·</span>
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400">22K (916):</span>
-            <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold22k}/g</span>
-          </div>
-          <span className="text-stone-700">·</span>
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400">18K:</span>
-            <span className="font-mono font-bold text-stone-200 tabular-nums">₹{rates.gold18k}/g</span>
-          </div>
-          <span className="text-stone-700">·</span>
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400">Silver:</span>
-            <span className="font-mono font-bold text-slate-200 tabular-nums">₹{rates.silver999}/g</span>
-          </div>
+          {(() => {
+            const trend24k = getRateTrend(rates.gold24k, rates.previousRates?.gold24k);
+            const trend22k = getRateTrend(rates.gold22k, rates.previousRates?.gold22k);
+            const trend18k = getRateTrend(rates.gold18k, rates.previousRates?.gold18k);
+            const trendSilver = getRateTrend(rates.silver999, rates.previousRates?.silver999);
+
+            return (
+              <>
+                <div
+                  className="flex items-center gap-1 cursor-default"
+                  title={trend24k.diff > 0 ? `24K Gold: ${trend24k.diffText} vs previous rate` : '24K Pure Gold'}
+                >
+                  <span className="text-stone-400">24K:</span>
+                  <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold24k}/g</span>
+                  <span
+                    className={`text-[12px] leading-none transition-transform ${
+                      trend24k.direction === 'up'
+                        ? 'text-emerald-400 font-bold'
+                        : trend24k.direction === 'down'
+                        ? 'text-rose-400 font-bold'
+                        : 'text-stone-500'
+                    }`}
+                  >
+                    {trend24k.emoji}
+                  </span>
+                </div>
+
+                <span className="text-stone-700">·</span>
+
+                <div
+                  className="flex items-center gap-1 cursor-default"
+                  title={trend22k.diff > 0 ? `22K (916): ${trend22k.diffText} vs previous rate` : '22K Standard Hallmark Gold'}
+                >
+                  <span className="text-stone-400">22K (916):</span>
+                  <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold22k}/g</span>
+                  <span
+                    className={`text-[12px] leading-none transition-transform ${
+                      trend22k.direction === 'up'
+                        ? 'text-emerald-400 font-bold'
+                        : trend22k.direction === 'down'
+                        ? 'text-rose-400 font-bold'
+                        : 'text-stone-500'
+                    }`}
+                  >
+                    {trend22k.emoji}
+                  </span>
+                </div>
+
+                <span className="text-stone-700">·</span>
+
+                <div
+                  className="flex items-center gap-1 cursor-default"
+                  title={trend18k.diff > 0 ? `18K: ${trend18k.diffText} vs previous rate` : '18K Diamond Jewellery Gold'}
+                >
+                  <span className="text-stone-400">18K:</span>
+                  <span className="font-mono font-bold text-stone-200 tabular-nums">₹{rates.gold18k}/g</span>
+                  <span
+                    className={`text-[12px] leading-none transition-transform ${
+                      trend18k.direction === 'up'
+                        ? 'text-emerald-400 font-bold'
+                        : trend18k.direction === 'down'
+                        ? 'text-rose-400 font-bold'
+                        : 'text-stone-500'
+                    }`}
+                  >
+                    {trend18k.emoji}
+                  </span>
+                </div>
+
+                <span className="text-stone-700">·</span>
+
+                <div
+                  className="flex items-center gap-1 cursor-default"
+                  title={trendSilver.diff > 0 ? `Silver: ${trendSilver.diffText} vs previous rate` : 'Fine Silver 999'}
+                >
+                  <span className="text-stone-400">Silver:</span>
+                  <span className="font-mono font-bold text-slate-200 tabular-nums">₹{rates.silver999}/g</span>
+                  <span
+                    className={`text-[12px] leading-none transition-transform ${
+                      trendSilver.direction === 'up'
+                        ? 'text-emerald-400 font-bold'
+                        : trendSilver.direction === 'down'
+                        ? 'text-rose-400 font-bold'
+                        : 'text-stone-500'
+                    }`}
+                  >
+                    {trendSilver.emoji}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
+          {rates.rateMode !== 'manual' && (
+            <span
+              className="hidden lg:inline-flex items-center gap-1 text-[10px] text-stone-400 bg-stone-900/90 px-2 py-0.5 rounded-full border border-stone-800"
+              title={`Auto-polls Custom Gold API safely every ${rates.autoSyncIntervalMinutes || 5} minutes without hitting server limits`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Auto ({rates.autoSyncIntervalMinutes || 5}m)</span>
+            </span>
+          )}
           {onSyncRates && (
             <button
               onClick={onSyncRates}

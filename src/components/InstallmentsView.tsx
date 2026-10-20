@@ -622,7 +622,7 @@ export const InstallmentsView: React.FC<Props> = ({
                         alt="KAMAKHYA JEWELLERS"
                         className="h-[76px] w-[76px] object-contain drop-shadow-xs"
                       />
-                      <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">Est. 1998</span>
+                      <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">ESTB. 2008</span>
                     </div>
 
                     {/* Center: Shop Details & Scheme Badge */}
@@ -796,9 +796,9 @@ export const InstallmentsView: React.FC<Props> = ({
 
                 {/* Passbook Terms & Instructions */}
                 <div className="text-[9.5px] text-stone-600 space-y-0.5 border-t border-stone-200 pt-2.5 leading-tight">
-                  <p>
-                    <strong>नियम व शर्तें (Terms & Instructions):</strong>
-                  </p>
+                  <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-0.5">
+                    Declaration & Showroom Terms (नियम व शर्तें):
+                  </div>
                   <p>
                     1. कृपया प्रत्येक मासिक किस्त जमा करते समय यह पासबुक कार्ड काउंटर पर अवश्य प्रस्तुत करें। (Kindly present this passbook card at showroom counter for every monthly deposit.)
                   </p>
@@ -807,6 +807,9 @@ export const InstallmentsView: React.FC<Props> = ({
                   </p>
                   <p>
                     3. योजना पूर्ण होने पर कुल संचित राशि के समतुल्य 916 हॉलमार्क आभूषण प्राप्त करें। (Upon completion of scheme tenure, the full accumulated amount is redeemable towards purchase of certified BIS 916 hallmarked jewellery.)
+                  </p>
+                  <p>
+                    4. Subject to local showroom jurisdiction only. E. & O.E.
                   </p>
                 </div>
               </div>

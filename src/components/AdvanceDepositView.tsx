@@ -631,7 +631,7 @@ export const AdvanceDepositView: React.FC<Props> = ({
                         alt="KAMAKHYA JEWELLERS"
                         className="h-[76px] w-[76px] object-contain drop-shadow-xs"
                       />
-                      <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">Est. 1998</span>
+                      <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">ESTB. 2008</span>
                     </div>
 
                     {/* Center: Shop Details & GSTIN */}
@@ -744,14 +744,17 @@ export const AdvanceDepositView: React.FC<Props> = ({
                   </span>
                 </div>
 
-                {/* Scheme & Acknowledgement Notice */}
-                <div className="text-[10px] text-stone-600 space-y-1 border-t border-stone-200 pt-3">
-                  <p>
-                    <strong>Legal Acknowledgement:</strong> This document is a payment receipt acknowledgement for advance money deposited towards future jewellery purchase and does not constitute a final GST Tax Invoice. A final Tax Invoice will be issued upon delivery and final reconciliation of the jewellery ornaments.
-                  </p>
-                  <p>
-                    The stamped metal rate represents the agreed benchmark at the time of booking as per Kamakhya Jewellers advance scheme terms. Subject to showroom jurisdiction only.
-                  </p>
+                {/* Declarations & Showroom Terms */}
+                <div className="text-[9.5px] text-stone-600 space-y-0.5 border-t border-stone-200 pt-2.5 leading-tight">
+                  <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-0.5">
+                    Declaration & Showroom Terms:
+                  </div>
+                  <ul className="list-disc pl-3 space-y-0.5">
+                    <li>This document is a formal payment acknowledgement for advance money deposited towards jewellery order/booking and does not constitute a final GST Tax Invoice.</li>
+                    <li>Final Tax Invoice will be issued upon delivery and final reconciliation of the jewellery ornaments.</li>
+                    <li>The stamped metal rate represents the agreed benchmark at the time of booking as per showroom advance scheme terms.</li>
+                    <li>Subject to local showroom jurisdiction only. E. & O.E.</li>
+                  </ul>
                 </div>
               </div>
 

@@ -63,7 +63,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                     alt="KAMAKHYA JEWELLERS"
                     className="h-[76px] w-[76px] object-contain drop-shadow-xs"
                   />
-                  <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">Est. 1998</span>
+                  <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">ESTB. 2008</span>
                 </div>
 
                 {/* Center: Shop Details & GSTIN */}
@@ -459,15 +459,21 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
           {/* Declarations & Signature Footer */}
           <div className="grid grid-cols-12 gap-3 pt-1 border-t border-stone-200">
             {/* Declaration and Terms */}
-            <div className="col-span-8 pr-3">
-              <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-0.5">
-                Declaration & Showroom Terms:
+            <div className="col-span-8 pr-3 flex flex-col justify-between">
+              <div>
+                <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-0.5">
+                  Declaration & Showroom Terms:
+                </div>
+                <ul className="text-[9px] text-stone-600 space-y-0.5 list-disc pl-3 leading-tight">
+                  {terms.map((term, i) => (
+                    <li key={i}>{term}</li>
+                  ))}
+                </ul>
               </div>
-              <ul className="text-[9px] text-stone-600 space-y-0.5 list-disc pl-3 leading-tight">
-                {terms.map((term, i) => (
-                  <li key={i}>{term}</li>
-                ))}
-              </ul>
+              <div className="pt-2">
+                <div className="w-40 border-b border-stone-400 mb-0.5"></div>
+                <span className="text-[8.5px] text-stone-500 font-medium">Customer Signature / Received</span>
+              </div>
             </div>
 
             {/* Authorised Signatory with Actual Signature Image */}

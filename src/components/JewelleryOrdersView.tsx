@@ -3,6 +3,9 @@ import { JewelleryOrder, Customer, OrderStatus, ShopSettings, MetalRates, MetalT
 import { formatINR, formatGrams } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
 import { Gem, Plus, Search, Printer, X, Image as ImageIcon, BookOpen, Clock, CheckCircle2, ArrowRight, Trash2 } from 'lucide-react';
+import mainLogoImg from '../assets/images/kamakhya_top_logo.png';
+import signatureImg from '../assets/images/authorized_signature.png';
+import watermarkImg from '../assets/images/watermark.png';
 
 interface Props {
   orders: JewelleryOrder[];
@@ -669,110 +672,189 @@ export const JewelleryOrdersView: React.FC<Props> = ({
             </button>
           </div>
 
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-stone-900 p-8 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-6 mx-auto text-xs">
-            <div className="border-b-2 border-stone-800 pb-3 mb-4 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-600">
-                Customer Jewellery Order Confirmation Sheet
-              </div>
-              <h2 className="text-2xl font-serif font-extrabold tracking-wider text-stone-900 mt-1 uppercase">
-                KAMAKHYA JEWELLERS
-              </h2>
-              <div className="text-xs font-serif text-amber-950 font-bold mb-1">
-                कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
-              </div>
-              <p className="text-xs text-stone-600">{settings.address}</p>
-              <p className="text-xs text-stone-600">Contact: +91 {settings.mobile} · GSTIN: {settings.gstin}</p>
+          {/* Printable A4 Container */}
+          <div
+            id="jewellery-order-print-area"
+            className="relative w-full max-w-[210mm] min-h-[297mm] bg-white text-stone-900 p-8 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-6 mx-auto text-xs overflow-hidden"
+          >
+            {/* Background Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+              <img
+                src={watermarkImg}
+                alt="Watermark"
+                className="w-[400px] max-w-[75%] opacity-[0.16] select-none object-contain print:opacity-[0.16]"
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-4 border border-stone-300 p-3 rounded-xs mb-4">
+            {/* Content Wrapper */}
+            <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
               <div>
-                <span className="font-semibold text-stone-600">Order No: </span>
-                <span className="font-mono font-bold text-stone-900">{selectedOrderForPrint.orderNumber}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-stone-600">Order Date: </span>
-                <span>{selectedOrderForPrint.orderDate}</span>
-              </div>
-              <div>
-                <span className="font-semibold text-stone-600">Customer: </span>
-                <span className="font-bold">{selectedOrderForPrint.customerName}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-stone-600">Delivery Expected: </span>
-                <span className="font-bold text-amber-900">{selectedOrderForPrint.expectedDeliveryDate}</span>
-              </div>
-            </div>
+                {/* Header */}
+                <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Left: Main Brand Logo (Gold Round KJ Emblem) */}
+                    <div className="w-[110px] shrink-0 flex flex-col items-center justify-center">
+                      <img
+                        src={mainLogoImg}
+                        alt="KAMAKHYA JEWELLERS"
+                        className="h-[76px] w-[76px] object-contain drop-shadow-xs"
+                      />
+                      <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">ESTB. 2008</span>
+                    </div>
 
-            {selectedOrderForPrint.designPhotoUrl && (
-              <div className="border border-stone-300 p-3 rounded-xs mb-4 flex items-center gap-4">
-                <img
-                  src={selectedOrderForPrint.designPhotoUrl}
-                  alt="Design photo"
-                  className="w-32 h-32 object-cover rounded-xs border border-stone-200"
-                />
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-stone-500">
-                    Design Reference Photo Attached
-                  </span>
-                  <p className="text-xs text-stone-700 mt-1">
-                    Design approved for workshop manufacturing according to customer specifications.
-                  </p>
+                    {/* Center: Shop Details & Scheme Badge */}
+                    <div className="text-center flex-1 px-3">
+                      <div className="mb-1.5">
+                        <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-1 rounded-full text-[10.5px] tracking-wider uppercase shadow-xs">
+                          ★ CUSTOMER JEWELLERY ORDER CONFIRMATION SHEET ★
+                        </span>
+                      </div>
+                      <h1 className="text-2xl sm:text-3xl font-serif font-extrabold tracking-wider text-stone-900 mt-1 mb-0.5 uppercase">
+                        KAMAKHYA JEWELLERS
+                      </h1>
+                      <div className="text-[11.5px] font-serif text-amber-950 font-bold mb-1">
+                        कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
+                      </div>
+                      <p className="text-[11px] text-stone-600 max-w-md mx-auto leading-normal">
+                        {settings.address}
+                      </p>
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
+                        <span>Ph: +91 {settings.mobile}</span>
+                        {settings.email && <span>· {settings.email}</span>}
+                      </div>
+                      <div className="text-[11px] font-bold text-stone-900 mt-0.5">
+                        GSTIN: {settings.gstin || '07AAACK1234F1Z8'}
+                      </div>
+                    </div>
+
+                    {/* Right: BIS Hallmarking & Quality Trust Emblem */}
+                    <div className="w-[110px] shrink-0 flex flex-col items-center justify-center border border-amber-300/80 bg-amber-50/50 p-2 rounded-xs text-center shadow-xs">
+                      <span className="text-[9px] font-bold text-amber-900 uppercase tracking-wider">
+                        BIS Certified
+                      </span>
+                      <span className="text-[8px] text-stone-600 mt-0.5 leading-tight">
+                        100% Hallmarked Quality
+                      </span>
+                      <span className="text-[8px] font-mono font-bold text-amber-950 mt-1 px-1.5 py-0.5 bg-amber-100/80 rounded-xs border border-amber-200">
+                        HUID ASSURED
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border border-stone-300 p-3 rounded-xs mb-3 bg-stone-50/40 print:bg-transparent">
+                  <div>
+                    <span className="font-semibold text-stone-600">Order No: </span>
+                    <span className="font-mono font-bold text-stone-900">{selectedOrderForPrint.orderNumber}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Order Date: </span>
+                    <span className="font-medium">{selectedOrderForPrint.orderDate}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-stone-600">Customer: </span>
+                    <span className="font-bold text-stone-900">{selectedOrderForPrint.customerName}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Delivery Expected: </span>
+                    <span className="font-bold text-amber-900">{selectedOrderForPrint.expectedDeliveryDate}</span>
+                  </div>
+                </div>
+
+                {selectedOrderForPrint.designPhotoUrl && (
+                  <div className="border border-stone-300 p-3 rounded-xs mb-3 flex items-center gap-4 bg-stone-50/40 print:bg-transparent">
+                    <img
+                      src={selectedOrderForPrint.designPhotoUrl}
+                      alt="Design photo"
+                      className="w-28 h-28 object-cover rounded-xs border border-stone-200"
+                    />
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-amber-900">
+                        Design Reference Photo Attached
+                      </span>
+                      <p className="text-xs text-stone-700 mt-1">
+                        Design approved for workshop manufacturing according to customer specifications.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border border-stone-300 rounded-xs overflow-hidden mb-3">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead className="bg-stone-100 font-bold border-b border-stone-300">
+                      <tr>
+                        <th className="py-2 px-3">Item Specification</th>
+                        <th className="py-2 px-3 text-right">Est. Gross Wt</th>
+                        <th className="py-2 px-3 text-right">Est. Net Wt</th>
+                        <th className="py-2 px-3 text-right">Quoted Rate /g</th>
+                        <th className="py-2 px-3 text-right">Est. Total Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="py-3 px-3">
+                          <div className="font-bold text-stone-900">{selectedOrderForPrint.metalType} ({selectedOrderForPrint.purity})</div>
+                          {selectedOrderForPrint.notes && (
+                            <div className="text-[11px] text-stone-500 italic mt-0.5">{selectedOrderForPrint.notes}</div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono">{selectedOrderForPrint.estimatedGrossWeight} g</td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-amber-950">
+                          {selectedOrderForPrint.estimatedNetWeight} g
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono">₹{selectedOrderForPrint.quotedRate}/g</td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-stone-900">
+                          {formatINR(selectedOrderForPrint.estimatedPrice)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="border border-stone-300 p-3 rounded-xs mb-3 space-y-1.5 text-xs bg-stone-50/40 print:bg-transparent">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-stone-600">Advance Paid:</span>
+                    <span className="font-mono font-bold text-emerald-800">{formatINR(selectedOrderForPrint.advancePaid)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-rose-700 font-bold border-t border-stone-200 pt-1">
+                    <span>Remaining Balance Due at Delivery:</span>
+                    <span className="font-mono">{formatINR(selectedOrderForPrint.remainingBalance)}</span>
+                  </div>
+                </div>
+
+                {/* Declarations & Showroom Terms */}
+                <div className="text-[9.5px] text-stone-600 space-y-0.5 border-t border-stone-200 pt-2.5 leading-tight">
+                  <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-0.5">
+                    Declaration & Showroom Terms:
+                  </div>
+                  <ul className="list-disc pl-3 space-y-0.5">
+                    <li>This jewellery order confirmation is an estimate and receipt acknowledgement for customised workshop manufacturing.</li>
+                    <li>Final metal weight, making charges, and billing will be confirmed on certified scales upon finished ornament inspection and hallmarking.</li>
+                    <li>Advance amount paid will be adjusted in the final GST Tax Invoice issued at time of physical ornament delivery.</li>
+                    <li>Subject to local showroom jurisdiction only. E. & O.E.</li>
+                  </ul>
                 </div>
               </div>
-            )}
 
-            <div className="border border-stone-300 rounded-xs overflow-hidden mb-4">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-stone-100 font-bold border-b border-stone-300">
-                  <tr>
-                    <th className="py-2 px-3">Item Specification</th>
-                    <th className="py-2 px-3 text-right">Est. Gross Wt</th>
-                    <th className="py-2 px-3 text-right">Est. Net Wt</th>
-                    <th className="py-2 px-3 text-right">Quoted Rate /g</th>
-                    <th className="py-2 px-3 text-right">Est. Total Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-stone-900">{selectedOrderForPrint.metalType} ({selectedOrderForPrint.purity})</div>
-                      {selectedOrderForPrint.notes && (
-                        <div className="text-[11px] text-stone-500 italic mt-0.5">{selectedOrderForPrint.notes}</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono">{selectedOrderForPrint.estimatedGrossWeight} g</td>
-                    <td className="py-3 px-3 text-right font-mono font-bold text-amber-950">
-                      {selectedOrderForPrint.estimatedNetWeight} g
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono">₹{selectedOrderForPrint.quotedRate}/g</td>
-                    <td className="py-3 px-3 text-right font-mono font-bold text-stone-900">
-                      {formatINR(selectedOrderForPrint.estimatedPrice)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+              {/* Signatures Area matching main bill */}
+              <div className="grid grid-cols-12 gap-3 pt-4 border-t border-stone-300">
+                <div className="col-span-6 flex flex-col justify-end">
+                  <div className="w-44 border-b border-stone-400 mb-1"></div>
+                  <span className="text-[10px] text-stone-500 font-medium">Customer Signature / Order Confirmed</span>
+                </div>
 
-            <div className="border border-stone-300 p-3 rounded-xs mb-6 space-y-1.5 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-stone-600">Advance Paid:</span>
-                <span className="font-mono font-bold text-emerald-800">{formatINR(selectedOrderForPrint.advancePaid)}</span>
-              </div>
-              <div className="flex justify-between items-center text-rose-700 font-bold border-t border-stone-200 pt-1">
-                <span>Remaining Balance Due at Delivery:</span>
-                <span className="font-mono">{formatINR(selectedOrderForPrint.remainingBalance)}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-end pt-12">
-              <div className="text-center">
-                <div className="w-36 border-b border-stone-400 mb-1"></div>
-                <span className="text-[10px] text-stone-500">Customer Signature</span>
-              </div>
-              <div className="text-center">
-                <div className="text-stone-800 font-serif italic text-base mb-1">{settings.ownerName}</div>
-                <div className="w-44 border-t border-stone-400 pt-1 text-[11px] font-bold text-stone-800">
-                  For {settings.businessName}
+                <div className="col-span-6 text-center flex flex-col justify-end items-center">
+                  <div className="h-14 flex items-end justify-center mb-0.5">
+                    <img
+                      src={signatureImg}
+                      alt="Authorised Signatory"
+                      className="max-h-14 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="w-48 border-t border-stone-400 pt-0.5 text-[11px] font-bold text-stone-800">
+                    For {settings.businessName}
+                  </div>
+                  <div className="text-[9.5px] text-stone-500">Authorised Signatory</div>
                 </div>
               </div>
             </div>

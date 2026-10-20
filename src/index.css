@@ -35,6 +35,26 @@
   header, footer, nav, .print\:hidden {
     display: none !important;
   }
+
+  body.has-print-modal main {
+    display: none !important;
+  }
+
+  body.has-print-modal header {
+    display: none !important;
+  }
+
+  body.has-print-modal footer {
+    display: none !important;
+  }
+
+  .print-page-background-content {
+    display: block;
+  }
+
+  body.has-print-modal .print-page-background-content {
+    display: none !important;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar {

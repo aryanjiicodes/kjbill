@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdvanceDeposit, Customer, MetalRates, ShopSettings, PaymentMode } from '../types';
 import { formatINR, formatGrams, numberToIndianWords } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
@@ -30,6 +30,17 @@ export const AdvanceDepositView: React.FC<Props> = ({
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState<AdvanceDeposit | null>(null);
   const [printLayout, setPrintLayout] = useState<'A4' | 'Card'>('A4');
+
+  useEffect(() => {
+    if (selectedReceiptForPrint) {
+      document.body.classList.add('has-print-modal');
+    } else {
+      document.body.classList.remove('has-print-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-print-modal');
+    };
+  }, [selectedReceiptForPrint]);
 
   // Form states
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -137,7 +148,7 @@ export const AdvanceDepositView: React.FC<Props> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedReceiptForPrint ? 'print:hidden' : ''}`}>
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
@@ -250,7 +261,11 @@ export const AdvanceDepositView: React.FC<Props> = ({
                     {adv.metalCategory} ({adv.purity})
                   </td>
                   <td className="py-3 px-3 text-right font-mono tabular-nums text-stone-700">
-                    {adv.metalRateAtDeposit > 0 ? `₹${adv.metalRateAtDeposit}/g` : '—'}
+                    {adv.metalRateAtDeposit > 0 ? (
+                      adv.metalCategory === 'Silver'
+                        ? `₹${Math.round(adv.metalRateAtDeposit * 1000).toLocaleString('en-IN')}/kg`
+                        : `₹${Math.round(adv.metalRateAtDeposit * 10).toLocaleString('en-IN')}/10g`
+                    ) : '—'}
                   </td>
                   <td className="py-3 px-3 text-right font-mono tabular-nums text-amber-950 font-bold">
                     {adv.equivalentGrams ? `${adv.equivalentGrams.toFixed(3)} g` : '—'}
@@ -698,9 +713,11 @@ export const AdvanceDepositView: React.FC<Props> = ({
                         </td>
                         <td className="py-3 px-3 font-semibold">{selectedReceiptForPrint.paymentMode}</td>
                         <td className="py-3 px-3 text-right font-mono">
-                          {selectedReceiptForPrint.metalRateAtDeposit > 0
-                            ? `₹${selectedReceiptForPrint.metalRateAtDeposit}/g (${selectedReceiptForPrint.purity})`
-                            : '—'}
+                          {selectedReceiptForPrint.metalRateAtDeposit > 0 ? (
+                            selectedReceiptForPrint.metalCategory === 'Silver'
+                              ? `₹${Math.round(selectedReceiptForPrint.metalRateAtDeposit * 1000).toLocaleString('en-IN')}/kg (${selectedReceiptForPrint.purity})`
+                              : `₹${Math.round(selectedReceiptForPrint.metalRateAtDeposit * 10).toLocaleString('en-IN')}/10g (${selectedReceiptForPrint.purity})`
+                          ) : '—'}
                         </td>
                         <td className="py-3 px-3 text-right font-mono font-bold text-amber-950">
                           {selectedReceiptForPrint.equivalentGrams

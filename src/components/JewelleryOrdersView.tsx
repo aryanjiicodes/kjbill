@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { JewelleryOrder, Customer, OrderStatus, ShopSettings, MetalRates, MetalType } from '../types';
 import { formatINR, formatGrams } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
@@ -27,6 +27,17 @@ export const JewelleryOrdersView: React.FC<Props> = ({
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [showNewOrderModal, setShowNewOrderModal] = useState(false);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<JewelleryOrder | null>(null);
+
+  useEffect(() => {
+    if (selectedOrderForPrint) {
+      document.body.classList.add('has-print-modal');
+    } else {
+      document.body.classList.remove('has-print-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-print-modal');
+    };
+  }, [selectedOrderForPrint]);
 
   // New Order Form state
   const [orderMethod, setOrderMethod] = useState<'Booklet' | 'Photo'>('Booklet');
@@ -119,7 +130,7 @@ export const JewelleryOrdersView: React.FC<Props> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedOrderForPrint ? 'print:hidden' : ''}`}>
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
@@ -641,7 +652,7 @@ export const JewelleryOrdersView: React.FC<Props> = ({
 
       {/* Printable Order Confirmation Sheet */}
       {selectedOrderForPrint && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
+        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:static print:block print:w-full print:h-auto print:bg-white print:p-0 print:m-0">
           <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white p-2 rounded-xl shadow-xl">
             <button
               onClick={() => window.print()}

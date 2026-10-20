@@ -79,10 +79,10 @@ export const Header: React.FC<Props> = ({
               <>
                 <div
                   className="flex items-center gap-1 cursor-default"
-                  title={trend24k.diff > 0 ? `24K Gold: ${trend24k.diffText} vs previous rate` : '24K Pure Gold'}
+                  title={trend24k.diff > 0 ? `24K Gold: +₹${(trend24k.diff * 10).toLocaleString('en-IN')} / 10g` : `24K Pure Gold (₹${rates.gold24k}/g)`}
                 >
                   <span className="text-stone-400">24K:</span>
-                  <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold24k}/g</span>
+                  <span className="font-mono font-bold text-amber-300 tabular-nums">₹{(rates.gold24k * 10).toLocaleString('en-IN')}/10g</span>
                   <span
                     className={`text-[12px] leading-none transition-transform ${
                       trend24k.direction === 'up'
@@ -100,10 +100,10 @@ export const Header: React.FC<Props> = ({
 
                 <div
                   className="flex items-center gap-1 cursor-default"
-                  title={trend22k.diff > 0 ? `22K (916): ${trend22k.diffText} vs previous rate` : '22K Standard Hallmark Gold'}
+                  title={trend22k.diff > 0 ? `22K (916): +₹${(trend22k.diff * 10).toLocaleString('en-IN')} / 10g` : `22K Hallmark (₹${rates.gold22k}/g)`}
                 >
                   <span className="text-stone-400">22K (916):</span>
-                  <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold22k}/g</span>
+                  <span className="font-mono font-bold text-amber-300 tabular-nums">₹{(rates.gold22k * 10).toLocaleString('en-IN')}/10g</span>
                   <span
                     className={`text-[12px] leading-none transition-transform ${
                       trend22k.direction === 'up'
@@ -121,10 +121,10 @@ export const Header: React.FC<Props> = ({
 
                 <div
                   className="flex items-center gap-1 cursor-default"
-                  title={trend18k.diff > 0 ? `18K: ${trend18k.diffText} vs previous rate` : '18K Diamond Jewellery Gold'}
+                  title={trend18k.diff > 0 ? `18K: +₹${(trend18k.diff * 10).toLocaleString('en-IN')} / 10g` : `18K Gold (₹${rates.gold18k}/g)`}
                 >
                   <span className="text-stone-400">18K:</span>
-                  <span className="font-mono font-bold text-stone-200 tabular-nums">₹{rates.gold18k}/g</span>
+                  <span className="font-mono font-bold text-stone-200 tabular-nums">₹{(rates.gold18k * 10).toLocaleString('en-IN')}/10g</span>
                   <span
                     className={`text-[12px] leading-none transition-transform ${
                       trend18k.direction === 'up'
@@ -142,10 +142,10 @@ export const Header: React.FC<Props> = ({
 
                 <div
                   className="flex items-center gap-1 cursor-default"
-                  title={trendSilver.diff > 0 ? `Silver: ${trendSilver.diffText} vs previous rate` : 'Fine Silver 999'}
+                  title={trendSilver.diff > 0 ? `Silver 999: +₹${Math.round(trendSilver.diff * 1000).toLocaleString('en-IN')} / kg` : `Fine Silver (₹${rates.silver999}/g)`}
                 >
                   <span className="text-stone-400">Silver:</span>
-                  <span className="font-mono font-bold text-slate-200 tabular-nums">₹{rates.silver999}/g</span>
+                  <span className="font-mono font-bold text-slate-200 tabular-nums">₹{Math.round(rates.silver999 * 1000).toLocaleString('en-IN')}/kg</span>
                   <span
                     className={`text-[12px] leading-none transition-transform ${
                       trendSilver.direction === 'up'

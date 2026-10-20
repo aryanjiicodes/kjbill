@@ -845,11 +845,11 @@ export const InvoiceForm: React.FC<Props> = ({
 
                   <div>
                     <label className="text-xs font-bold text-stone-800 block mb-1">
-                      Metal Rate /g (₹) *
+                      {item.metalType === 'Silver' ? 'Silver Rate (₹ / g)' : 'Gold Rate (₹ / g)'} *
                     </label>
                     <input
                       type="number"
-                      step="1"
+                      step="0.1"
                       min="0"
                       value={item.ratePerGram || ''}
                       onChange={(e) =>
@@ -857,7 +857,11 @@ export const InvoiceForm: React.FC<Props> = ({
                       }
                       className="w-full px-3 py-2 text-sm font-mono font-bold bg-white border border-stone-300 rounded-lg text-right focus:outline-none focus:border-amber-600 shadow-xs"
                     />
-                    <span className="text-[10px] text-stone-500 mt-0.5 block">Today's selling rate</span>
+                    <span className="text-[10px] text-amber-900 font-semibold mt-0.5 block">
+                      {item.metalType === 'Silver'
+                        ? `= ₹${Math.round((item.ratePerGram || 0) * 1000).toLocaleString('en-IN')} / kg`
+                        : `= ₹${Math.round((item.ratePerGram || 0) * 10).toLocaleString('en-IN')} / 10g`}
+                    </span>
                   </div>
 
                   <div className="bg-white p-2.5 rounded-lg border border-stone-200">
@@ -1129,13 +1133,18 @@ export const InvoiceForm: React.FC<Props> = ({
                     <td className="py-3 px-3 text-right">
                       <input
                         type="number"
-                        step="1"
+                        step="0.1"
                         value={item.ratePerGram || ''}
                         onChange={(e) =>
                           handleItemChange(idx, { ratePerGram: parseFloat(e.target.value) || 0 })
                         }
                         className="w-full px-2 py-1.5 text-right bg-white border border-stone-300 rounded-md text-xs font-mono font-bold"
                       />
+                      <span className="text-[9px] text-amber-900 block font-sans font-semibold mt-0.5 whitespace-nowrap">
+                        {item.metalType === 'Silver'
+                          ? `₹${Math.round((item.ratePerGram || 0) * 1000).toLocaleString('en-IN')}/kg`
+                          : `₹${Math.round((item.ratePerGram || 0) * 10).toLocaleString('en-IN')}/10g`}
+                      </span>
                     </td>
 
                     {/* Stone Rate */}
@@ -1409,10 +1418,16 @@ export const InvoiceForm: React.FC<Props> = ({
                         <input
                           type="number"
                           min="0"
+                          step="0.1"
                           value={oldGoldRatePerGram || ''}
                           onChange={(e) => setOldGoldRatePerGram(parseFloat(e.target.value) || 0)}
                           className="w-full px-2 py-1 text-xs font-mono font-bold bg-white border border-stone-300 rounded-md text-right"
                         />
+                        <span className="text-[9.5px] text-amber-900 block font-sans font-semibold mt-0.5">
+                          {oldGoldPurity.includes('Silver')
+                            ? `= ₹${Math.round((oldGoldRatePerGram || 0) * 1000).toLocaleString('en-IN')} / kg`
+                            : `= ₹${Math.round((oldGoldRatePerGram || 0) * 10).toLocaleString('en-IN')} / 10g`}
+                        </span>
                       </div>
 
                       <div className="bg-amber-50/70 p-2 rounded-md border border-amber-200 text-right">

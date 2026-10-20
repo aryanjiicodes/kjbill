@@ -420,7 +420,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
                 </div>
               )}
 
-              {/* Live Preview Cards with Up / Down Emojis */}
+              {/* Live Preview Cards with Up / Down Emojis (Standard Per 10g for Gold, Per Kg for Silver) */}
               {(() => {
                 const trend24k = getRateTrend(gold24k, rates?.previousRates?.gold24k);
                 const trend22k = getRateTrend(gold22k, rates?.previousRates?.gold22k);
@@ -433,44 +433,44 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] text-stone-500 font-semibold uppercase">Gold 24K (Pure)</span>
                         <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trend24k.bgClass} ${trend24k.borderClass}`}>
-                          {trend24k.emoji} {trend24k.diff > 0 ? trend24k.diffText : ''}
+                          {trend24k.emoji} {trend24k.diff > 0 ? `+₹${Math.round(trend24k.diff * 10)}/10g` : ''}
                         </span>
                       </div>
-                      <span className="text-base font-bold font-mono text-amber-950">₹{gold24k}/g</span>
-                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold24k * 10).toLocaleString('en-IN')}/10g</span>
+                      <span className="text-base font-bold font-mono text-amber-950">₹{(gold24k * 10).toLocaleString('en-IN')}/10g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold24k.toFixed(1)}/g</span>
                     </div>
 
                     <div className="bg-white p-3 rounded-xl border border-amber-300 bg-amber-50/20">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] text-amber-800 font-semibold uppercase">Gold 22K (916)</span>
                         <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trend22k.bgClass} ${trend22k.borderClass}`}>
-                          {trend22k.emoji} {trend22k.diff > 0 ? trend22k.diffText : ''}
+                          {trend22k.emoji} {trend22k.diff > 0 ? `+₹${Math.round(trend22k.diff * 10)}/10g` : ''}
                         </span>
                       </div>
-                      <span className="text-base font-bold font-mono text-amber-900">₹{gold22k}/g</span>
-                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold22k * 10).toLocaleString('en-IN')}/10g</span>
+                      <span className="text-base font-bold font-mono text-amber-900">₹{(gold22k * 10).toLocaleString('en-IN')}/10g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold22k.toFixed(1)}/g</span>
                     </div>
 
                     <div className="bg-white p-3 rounded-xl border border-stone-200">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] text-stone-500 font-semibold uppercase">Gold 18K (750)</span>
                         <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trend18k.bgClass} ${trend18k.borderClass}`}>
-                          {trend18k.emoji} {trend18k.diff > 0 ? trend18k.diffText : ''}
+                          {trend18k.emoji} {trend18k.diff > 0 ? `+₹${Math.round(trend18k.diff * 10)}/10g` : ''}
                         </span>
                       </div>
-                      <span className="text-base font-bold font-mono text-stone-800">₹{gold18k}/g</span>
-                      <span className="text-[10px] text-stone-400 block mt-0.5">75% Purity</span>
+                      <span className="text-base font-bold font-mono text-stone-800">₹{(gold18k * 10).toLocaleString('en-IN')}/10g</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold18k.toFixed(1)}/g</span>
                     </div>
 
                     <div className="bg-white p-3 rounded-xl border border-stone-200">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] text-stone-500 font-semibold uppercase">Silver 999 (Pure)</span>
                         <span className={`text-[11px] font-bold px-1.5 py-0.2 rounded border ${trendSilver.bgClass} ${trendSilver.borderClass}`}>
-                          {trendSilver.emoji} {trendSilver.diff > 0 ? trendSilver.diffText : ''}
+                          {trendSilver.emoji} {trendSilver.diff > 0 ? `+₹${Math.round(trendSilver.diff * 1000)}/kg` : ''}
                         </span>
                       </div>
-                      <span className="text-base font-bold font-mono text-slate-800">₹{silver999}/g</span>
-                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{(silver999 * 1000).toLocaleString('en-IN')}/kg</span>
+                      <span className="text-base font-bold font-mono text-slate-800">₹{Math.round(silver999 * 1000).toLocaleString('en-IN')}/kg</span>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">₹{silver999.toFixed(2)}/g</span>
                     </div>
                   </div>
                 );
@@ -478,91 +478,116 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
             </div>
           )}
 
-          {/* If Manual Mode */}
+          {/* If Manual Mode (Standard Gold Per 10g, Silver Per Kg) */}
           {rateMode === 'manual' && (
             <div className="space-y-4 bg-stone-50 border border-stone-200 rounded-xl p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-stone-800 uppercase tracking-wide">
-                  Custom Manual Metal Rates (₹ / Gram)
+                  Custom Manual Metal Rates (Standard ₹ / 10g Gold & ₹ / kg Silver)
                 </span>
                 <span className="text-[11px] text-stone-500">
-                  Type 24K rate to auto-calculate 22K and 18K
+                  Type 24K per 10g rate to auto-calculate other purities
                 </span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
-                    Gold 24K (Pure 999) *
+                    Gold 24K (Pure 999) - ₹ / 10g *
                   </label>
                   <input
                     type="number"
-                    value={gold24k}
-                    onChange={(e) => handleAutoCalcGold(parseFloat(e.target.value) || 0)}
+                    value={Math.round(gold24k * 10)}
+                    onChange={(e) => {
+                      const val10g = parseFloat(e.target.value) || 0;
+                      handleAutoCalcGold(Math.round((val10g / 10) * 100) / 100);
+                    }}
+                    placeholder="e.g. 149200"
                     className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg text-amber-950"
                   />
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold24k.toFixed(1)} / gram</span>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
-                    Gold 22K (Hallmark 916) *
+                    Gold 22K (Hallmark 916) - ₹ / 10g *
                   </label>
                   <input
                     type="number"
-                    value={gold22k}
-                    onChange={(e) => setGold22k(parseFloat(e.target.value) || 0)}
+                    value={Math.round(gold22k * 10)}
+                    onChange={(e) => {
+                      const val10g = parseFloat(e.target.value) || 0;
+                      setGold22k(Math.round((val10g / 10) * 100) / 100);
+                    }}
+                    placeholder="e.g. 136700"
                     className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg text-amber-900"
                   />
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold22k.toFixed(1)} / gram</span>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-stone-700 block mb-1">
-                    Gold 18K (Hallmark 750)
+                    Gold 18K (Hallmark 750) - ₹ / 10g
                   </label>
                   <input
                     type="number"
-                    value={gold18k}
-                    onChange={(e) => setGold18k(parseFloat(e.target.value) || 0)}
+                    value={Math.round(gold18k * 10)}
+                    onChange={(e) => {
+                      const val10g = parseFloat(e.target.value) || 0;
+                      setGold18k(Math.round((val10g / 10) * 100) / 100);
+                    }}
                     className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
                   />
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold18k.toFixed(1)} / gram</span>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-stone-700 block mb-1">
-                    Gold 14K (Hallmark 585)
+                    Gold 14K (Economy 585) - ₹ / 10g
                   </label>
                   <input
                     type="number"
-                    value={gold14k}
-                    onChange={(e) => setGold14k(parseFloat(e.target.value) || 0)}
+                    value={Math.round(gold14k * 10)}
+                    onChange={(e) => {
+                      const val10g = parseFloat(e.target.value) || 0;
+                      setGold14k(Math.round((val10g / 10) * 100) / 100);
+                    }}
                     className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
                   />
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{gold14k.toFixed(1)} / gram</span>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
-                    Silver 999 (Pure)
+                    Silver 999 (Pure) - ₹ / kg *
                   </label>
                   <input
                     type="number"
-                    step="0.1"
-                    value={silver999}
-                    onChange={(e) => setSilver999(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
+                    value={Math.round(silver999 * 1000)}
+                    onChange={(e) => {
+                      const valKg = parseFloat(e.target.value) || 0;
+                      setSilver999(Math.round((valKg / 1000) * 100) / 100);
+                    }}
+                    placeholder="e.g. 208600"
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg text-slate-800"
                   />
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{silver999.toFixed(2)} / gram</span>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-stone-700 block mb-1">
-                    Silver 925 (Sterling)
+                    Silver 925 (Sterling) - ₹ / kg
                   </label>
                   <input
                     type="number"
-                    step="0.1"
-                    value={silver925}
-                    onChange={(e) => setSilver925(parseFloat(e.target.value) || 0)}
+                    value={Math.round(silver925 * 1000)}
+                    onChange={(e) => {
+                      const valKg = parseFloat(e.target.value) || 0;
+                      setSilver925(Math.round((valKg / 1000) * 100) / 100);
+                    }}
                     className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
                   />
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{silver925.toFixed(2)} / gram</span>
                 </div>
               </div>
             </div>

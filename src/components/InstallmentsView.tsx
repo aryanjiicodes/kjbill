@@ -32,6 +32,17 @@ export const InstallmentsView: React.FC<Props> = ({
     payment?: InstallmentPayment;
   } | null>(null);
 
+  useEffect(() => {
+    if (selectedSlipForPrint) {
+      document.body.classList.add('has-print-modal');
+    } else {
+      document.body.classList.remove('has-print-modal');
+    }
+    return () => {
+      document.body.classList.remove('has-print-modal');
+    };
+  }, [selectedSlipForPrint]);
+
   // New Plan form states
   const [selectedCust, setSelectedCust] = useState<Customer | null>(null);
   const [custSearch, setCustSearch] = useState('');
@@ -128,7 +139,7 @@ export const InstallmentsView: React.FC<Props> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+    <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedSlipForPrint ? 'print:hidden' : ''}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
         <div>

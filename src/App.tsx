@@ -222,8 +222,8 @@ export default function App() {
         isSyncingRates={isSyncingRates}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 pb-16">
+      {/* Main Content Area (Hidden during bill printing so dashboard never prints) */}
+      <main className={`flex-1 pb-16 ${printInvoice ? 'print:hidden' : ''}`}>
         {activeTab === 'dashboard' && (
           <Dashboard
             invoices={invoices}

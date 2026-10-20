@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Invoice, ShopSettings } from '../types';
 import { formatINR, numberToIndianWords } from '../utils/numberToWords';
 import { Printer, X, Download, Loader2, MessageCircle, Copy, Check, ExternalLink } from 'lucide-react';
 import { openWhatsAppInvoice, generateWhatsAppInvoiceMessage } from '../utils/whatsapp';
+import { generateUpiQrDataUrl } from '../utils/qrCode';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -24,10 +25,11 @@ interface SheetProps {
   copySubtitle: string;
   terms: string[];
   totalOtherCharges: number;
+  activeQrUrl?: string;
 }
 
 const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
-  ({ invoice, settings, copyTitle, copySubtitle, terms, totalOtherCharges }, ref) => {
+  ({ invoice, settings, copyTitle, copySubtitle, terms, totalOtherCharges, activeQrUrl }, ref) => {
     return (
       <div
         ref={ref}
@@ -174,8 +176,8 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                     <th className="py-1 px-1 text-center border-r border-stone-300">Purity</th>
                     <th className="py-1 px-1.5 text-right border-r border-stone-300">Gross (g)</th>
                     <th className="py-1 px-1 text-right border-r border-stone-300">Stone (g)</th>
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300 font-bold text-stone-900 bg-amber-50/60 print:bg-transparent">Net (g)</th>
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Rate /g</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Net (g)</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Rate</th>
                     <th className="py-1 px-1 text-center border-r border-stone-300">Mkg %</th>
                     <th className="py-1 px-1.5 text-right border-r border-stone-300">Other Chg</th>
                     <th className="py-1 px-1.5 text-right border-r border-stone-300">Taxable</th>
@@ -225,8 +227,18 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                         <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums font-bold text-stone-900 bg-amber-50/40 print:bg-transparent">
                           {item.netWeight.toFixed(3)}
                         </td>
-                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
-                          {item.ratePerGram.toFixed(2)}
+                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums leading-tight">
+                          {item.metalType === 'Silver' ? (
+                            <div>
+                              <span className="font-bold">₹{Math.round(item.ratePerGram * 1000).toLocaleString('en-IN')}/kg</span>
+                              <span className="text-[8.5px] text-stone-500 block font-sans">({item.ratePerGram.toFixed(1)}/g)</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="font-bold">₹{Math.round(item.ratePerGram * 10).toLocaleString('en-IN')}/10g</span>
+                              <span className="text-[8.5px] text-stone-500 block font-sans">({item.ratePerGram.toFixed(1)}/g)</span>
+                            </div>
+                          )}
                         </td>
                         <td className="py-1 px-1 text-center border-r border-stone-300 font-mono font-medium text-stone-700">
                           {mkgPercentText}
@@ -301,23 +313,23 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                 <div className="space-y-0.5 text-[10.5px] text-stone-700">
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">Bank:</span>
-                    <span className="font-medium text-stone-900">{invoice.bankDetails?.bankName || settings.bankName}</span>
+                    <span className="font-medium text-stone-900">{settings.bankName || invoice.bankDetails?.bankName}</span>
                   </div>
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">A/C Name:</span>
-                    <span className="font-bold text-stone-900">{invoice.bankDetails?.accountName || settings.accountName}</span>
+                    <span className="font-bold text-stone-900">{settings.accountName || invoice.bankDetails?.accountName}</span>
                   </div>
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">A/C No:</span>
-                    <span className="font-mono font-bold text-stone-900">{invoice.bankDetails?.accountNumber || settings.accountNumber}</span>
+                    <span className="font-mono font-bold text-stone-900">{settings.accountNumber || invoice.bankDetails?.accountNumber}</span>
                   </div>
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">IFSC:</span>
-                    <span className="font-mono font-semibold text-stone-900">{invoice.bankDetails?.ifscCode || settings.ifscCode}</span>
+                    <span className="font-mono font-semibold text-stone-900">{settings.ifscCode || invoice.bankDetails?.ifscCode}</span>
                   </div>
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">UPI ID:</span>
-                    <span className="font-mono font-bold text-amber-900">{invoice.bankDetails?.upiId || settings.upiId}</span>
+                    <span className="font-mono font-bold text-amber-900">{settings.upiId || invoice.bankDetails?.upiId}</span>
                   </div>
                 </div>
               </div>
@@ -327,9 +339,9 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                 <div className="text-[9.5px] font-bold uppercase tracking-wider text-stone-700 mb-0.5">
                   Scan to Pay:
                 </div>
-                {invoice.qrCodeDataUrl ? (
+                {activeQrUrl || invoice.qrCodeDataUrl ? (
                   <img
-                    src={invoice.qrCodeDataUrl}
+                    src={activeQrUrl || invoice.qrCodeDataUrl}
                     alt="UPI Payment QR"
                     className="w-20 h-20 object-contain border border-stone-200 rounded-xs bg-white p-0.5"
                   />
@@ -485,12 +497,37 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
   const [printTwoPages, setPrintTwoPages] = useState(true);
   const [showWhatsAppHelp, setShowWhatsAppHelp] = useState(false);
 
+  // Keep body marked so background dashboard or other views NEVER print
+  useEffect(() => {
+    document.body.classList.add('has-print-modal');
+    return () => {
+      document.body.classList.remove('has-print-modal');
+    };
+  }, []);
+
+  // Dynamically generate QR code from current shop settings UPI ID
+  const [activeQrUrl, setActiveQrUrl] = useState<string>(invoice.qrCodeDataUrl || '');
+
+  useEffect(() => {
+    const upi = settings.upiId || invoice.bankDetails?.upiId || '9818144011@okbizaxis';
+    const amount =
+      invoice.remainingBalance > 0
+        ? invoice.remainingBalance
+        : invoice.netPayable !== undefined && invoice.netPayable > 0
+        ? invoice.netPayable
+        : invoice.grandTotal;
+
+    generateUpiQrDataUrl(upi, settings.businessName, amount, invoice.invoiceNumber).then((url) => {
+      if (url) setActiveQrUrl(url);
+    });
+  }, [settings.upiId, settings.businessName, invoice]);
+
   const handlePrint = () => {
     window.print();
   };
 
-  // Helper to build a clean multi-page A4 PDF Blob
-  const buildInvoicePdf = async (): Promise<Blob | null> => {
+  // Helper to build a clean multi-page A4 PDF using jsPDF
+  const buildInvoicePdf = async (): Promise<{ pdf: jsPDF; blob: Blob } | null> => {
     if (!page1Ref.current) return null;
 
     const pdf = new jsPDF({
@@ -500,11 +537,10 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
       compress: true,
     });
 
-    // Render Page 1 (Original Copy)
+    // Render Page 1 (Original Copy) - allowTaint removed to avoid canvas security errors on Vercel
     const canvas1 = await html2canvas(page1Ref.current, {
       scale: 2,
       useCORS: true,
-      allowTaint: true,
       logging: false,
       backgroundColor: '#ffffff',
       scrollX: 0,
@@ -521,7 +557,6 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
       const canvas2 = await html2canvas(page2Ref.current, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         scrollX: 0,
@@ -532,29 +567,25 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
       pdf.addImage(imgData2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
     }
 
-    return pdf.output('blob');
+    const blob = pdf.output('blob');
+    return { pdf, blob };
   };
 
   const handleDownloadPdf = async (): Promise<void> => {
     setIsGeneratingPdf(true);
     try {
-      const blob = await buildInvoicePdf();
-      if (!blob) throw new Error('Failed to render invoice sheet canvas');
+      const res = await buildInvoicePdf();
+      if (!res) throw new Error('Failed to render invoice sheet canvas');
 
       const safeNumber = invoice.invoiceNumber.replace(/[\/\\]/g, '_');
       const fileName = `Kamakhya_Jewellers_Invoice_${safeNumber}.pdf`;
 
-      const blobUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = blobUrl;
-      downloadLink.download = fileName;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+      // Official jsPDF direct download: works 100% on Vercel and all desktop & mobile browsers
+      res.pdf.save(fileName);
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
-      alert('Direct PDF generation encountered an issue. You can click "Print A4 Invoice" and select "Save as PDF" in your print dialog!');
+      console.warn('Direct PDF canvas issue, falling back to browser print engine:', error);
+      // Seamless browser print-to-PDF fallback
+      window.print();
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -563,12 +594,12 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
   const handleSendWhatsAppWithPdf = async () => {
     setIsGeneratingPdf(true);
     try {
-      const blob = await buildInvoicePdf();
-      if (!blob) throw new Error('Failed to render invoice for WhatsApp');
+      const res = await buildInvoicePdf();
+      if (!res) throw new Error('Failed to render invoice for WhatsApp');
 
       const safeNumber = invoice.invoiceNumber.replace(/[\/\\]/g, '_');
       const fileName = `Kamakhya_Jewellers_Invoice_${safeNumber}.pdf`;
-      const pdfFile = new File([blob], fileName, { type: 'application/pdf' });
+      const pdfFile = new File([res.blob], fileName, { type: 'application/pdf' });
 
       // 1. Try Native Web Share API (Instant share directly to WhatsApp on Android, iOS & modern Windows)
       if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
@@ -587,21 +618,13 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
         }
       }
 
-      // 2. Fallback for Desktop Browsers (e.g. Chrome on Windows):
-      // A) Auto-download the PDF
-      const blobUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = blobUrl;
-      downloadLink.download = fileName;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+      // 2. Direct download with jsPDF save
+      res.pdf.save(fileName);
 
-      // B) Open WhatsApp Web chat with customer
+      // 3. Open WhatsApp Web chat with customer
       openWhatsAppInvoice(invoice, settings);
 
-      // C) Show guidance modal
+      // 4. Show guidance modal
       setShowWhatsAppHelp(true);
     } catch (err) {
       console.error('WhatsApp with PDF process error:', err);
@@ -808,6 +831,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
           copySubtitle="CUSTOMER COPY"
           terms={terms}
           totalOtherCharges={totalOtherCharges}
+          activeQrUrl={activeQrUrl}
         />
       </div>
 
@@ -822,6 +846,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
             copySubtitle="OFFICE / STORE COPY"
             terms={terms}
             totalOtherCharges={totalOtherCharges}
+            activeQrUrl={activeQrUrl}
           />
         </div>
       )}

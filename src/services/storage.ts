@@ -91,8 +91,12 @@ export const StorageService = {
         supabase.from('inventory_items').select('data'),
       ]);
 
-      if (remoteSettings?.data) setStored(STORAGE_KEYS.SETTINGS, remoteSettings.data);
-      if (remoteRates?.data) setStored(STORAGE_KEYS.RATES, remoteRates.data);
+      if (remoteSettings?.data && typeof remoteSettings.data === 'object' && remoteSettings.data.businessName) {
+        setStored(STORAGE_KEYS.SETTINGS, { ...defaultSettings, ...remoteSettings.data });
+      }
+      if (remoteRates?.data && typeof remoteRates.data === 'object' && remoteRates.data.gold24k) {
+        setStored(STORAGE_KEYS.RATES, { ...defaultRates, ...remoteRates.data });
+      }
       if (remoteCust && remoteCust.length > 0) setStored(STORAGE_KEYS.CUSTOMERS, remoteCust);
       if (remoteInvoices && remoteInvoices.length > 0) setStored(STORAGE_KEYS.INVOICES, remoteInvoices.map((r: any) => r.data));
       if (remoteAdvances && remoteAdvances.length > 0) setStored(STORAGE_KEYS.ADVANCES, remoteAdvances.map((r: any) => r.data));
@@ -104,7 +108,8 @@ export const StorageService = {
   },
 
   getSettings(): ShopSettings {
-    return getStored<ShopSettings>(STORAGE_KEYS.SETTINGS, defaultSettings);
+    const stored = getStored<ShopSettings>(STORAGE_KEYS.SETTINGS, defaultSettings);
+    return { ...defaultSettings, ...stored };
   },
 
   saveSettings(settings: ShopSettings): void {

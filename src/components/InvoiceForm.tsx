@@ -930,10 +930,10 @@ export const InvoiceForm: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Grid Section 4: Making Charges & Tax Breakdown */}
+                {/* Grid Section 4: Making Charges, Other Charges & Tax Breakdown */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                  <div className="sm:col-span-5 flex items-center gap-2">
-                    <div className="w-32">
+                  <div className="sm:col-span-4 flex items-center gap-2">
+                    <div className="w-28">
                       <label className="text-xs font-bold text-stone-700 block mb-1">
                         Making Type
                       </label>
@@ -971,8 +971,25 @@ export const InvoiceForm: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  <div className="sm:col-span-3 bg-stone-50 p-2 rounded-lg border border-stone-200 text-xs">
-                    <span className="text-stone-500 block text-[10px]">Making Charges Total:</span>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-stone-700 block mb-1">
+                      Other Charges (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={item.otherCharges || ''}
+                      onChange={(e) =>
+                        handleItemChange(idx, { otherCharges: parseFloat(e.target.value) || 0 })
+                      }
+                      placeholder="0.00"
+                      className="w-full px-2.5 py-1.5 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg text-right"
+                      title="Certification, Hallmarking, or Rhodium plating charges"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2 bg-stone-50 p-2 rounded-lg border border-stone-200 text-xs">
+                    <span className="text-stone-500 block text-[10px]">Making Charges:</span>
                     <span className="font-mono font-bold text-stone-900 block mt-0.5">
                       {formatINR(item.makingCharges)}
                     </span>
@@ -1012,6 +1029,7 @@ export const InvoiceForm: React.FC<Props> = ({
                   <th className="py-3 px-3 min-w-[110px] text-right">Stone Rate (₹)</th>
                   <th className="py-3 px-3 min-w-[110px] text-right">Stone Chg (₹)</th>
                   <th className="py-3 px-3 min-w-[120px] text-right">Making Chg</th>
+                  <th className="py-3 px-3 min-w-[95px] text-right">Other (₹)</th>
                   <th className="py-3 px-3 min-w-[110px] text-right">Taxable (₹)</th>
                   <th className="py-3 px-2 min-w-[70px] text-center">GST%</th>
                   <th className="py-3 px-3 min-w-[120px] text-right font-bold text-stone-900">Total (₹)</th>
@@ -1148,6 +1166,20 @@ export const InvoiceForm: React.FC<Props> = ({
                           handleItemChange(idx, { makingChargeRate: parseFloat(e.target.value) || 0 })
                         }
                         placeholder="200"
+                        className="w-full px-2 py-1.5 text-right bg-white border border-stone-300 rounded-md text-xs font-mono"
+                      />
+                    </td>
+
+                    {/* Other Charges */}
+                    <td className="py-3 px-3 text-right">
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={item.otherCharges || ''}
+                        onChange={(e) =>
+                          handleItemChange(idx, { otherCharges: parseFloat(e.target.value) || 0 })
+                        }
                         className="w-full px-2 py-1.5 text-right bg-white border border-stone-300 rounded-md text-xs font-mono"
                       />
                     </td>

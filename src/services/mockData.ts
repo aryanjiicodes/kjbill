@@ -11,7 +11,7 @@ import {
 } from '../types';
 
 export const defaultSettings: ShopSettings = {
-  businessName: 'Kamakhya Jewellers',
+  businessName: 'कामाख्या ज्वैलर्स (छपरा-सिवान वाले)',
   ownerName: 'DHANANJAY VERMA',
   address: 'A-123, Ganpati Market, New Ashok Nagar, Delhi – 110096, India',
   mobile: '9818144011',
@@ -29,14 +29,14 @@ export const defaultSettings: ShopSettings = {
   receiptPrefix: 'REC',
   financialYear: '2026-27',
   termsAndConditions: [
-    'Goods once sold will not be taken back or exchanged after 7 days.',
-    'All disputes subject to Delhi jurisdiction only.',
-    'Please check the jewellery & purity stamp before leaving the counter.',
-    'Payment once made will not be refunded in cash.',
-    'Prices are inclusive of 3% GST unless mentioned otherwise.',
+    'Certified 100% BIS Hallmarked jewellery. Purity & weight guaranteed as per tax invoice.',
+    'Exchange or Buyback will be accepted strictly on prevailing market metal rates as per store policy.',
+    'Stone weight has been deducted from gross weight to arrive at net precious metal weight.',
+    'Customers are requested to verify the ornaments, hallmark stamp, and weight before leaving the showroom counter.',
+    'Subject to local showroom jurisdiction only. E. & O.E.',
   ],
-  logoUrl: '/src/assets/images/kamakhya_logo_1792333784749.jpg',
-  bisHallmarkUrl: '/src/assets/images/bis_hallmark_emblem_1792333785310.jpg',
+  logoUrl: '/src/assets/images/kamakhya_main_logo.png',
+  bisHallmarkUrl: '/src/assets/images/bis_hallmark_logo.png',
   ownerPin: '1234',
   staffPin: '0000',
 };

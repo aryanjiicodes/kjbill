@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShopSettings } from '../types';
 import { StorageService } from '../services/storage';
 import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
@@ -10,6 +10,12 @@ interface Props {
 
 export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
   const [formData, setFormData] = useState<ShopSettings>({ ...settings });
+
+  useEffect(() => {
+    if (settings && settings.businessName) {
+      setFormData({ ...settings });
+    }
+  }, [settings]);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);

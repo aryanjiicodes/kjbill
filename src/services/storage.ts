@@ -418,13 +418,6 @@ export const StorageService = {
     return plan;
   },
 
-  deleteInstallmentPlan(id: string): boolean {
-    const list = this.getInstallmentPlans().filter((p) => p.id !== id);
-    setStored(STORAGE_KEYS.INSTALLMENTS, list);
-    deleteFromSupabase('installment_plans', id);
-    return true;
-  },
-
   getOrders(): JewelleryOrder[] {
     return getStored<JewelleryOrder[]>(STORAGE_KEYS.ORDERS, defaultOrders);
   },

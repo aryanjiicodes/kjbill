@@ -133,7 +133,8 @@ export const JewelleryOrdersView: React.FC<Props> = ({
   };
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedOrderForPrint ? 'print:hidden' : ''}`}>
+    <>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedOrderForPrint ? 'print:hidden' : ''}`}>
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
@@ -652,10 +653,37 @@ export const JewelleryOrdersView: React.FC<Props> = ({
           </div>
         </div>
       )}
+      </div>
 
       {/* Printable Order Confirmation Sheet */}
       {selectedOrderForPrint && (
         <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:static print:block print:w-full print:h-auto print:bg-white print:p-0 print:m-0">
+          <style>{`
+            @media print {
+              html, body {
+                overflow: visible !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+              }
+              ::-webkit-scrollbar {
+                display: none !important;
+                width: 0px !important;
+                height: 0px !important;
+              }
+              @page {
+                size: A4 portrait;
+                margin: 5mm 5mm;
+              }
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+          `}</style>
           <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white p-2 rounded-xl shadow-xl">
             <button
               onClick={() => window.print()}
@@ -861,6 +889,6 @@ export const JewelleryOrdersView: React.FC<Props> = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

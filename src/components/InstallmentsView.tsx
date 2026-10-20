@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InstallmentPlan, InstallmentPayment, Customer, ShopSettings, PaymentMode } from '../types';
 import { formatINR, numberToIndianWords } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
@@ -139,7 +139,8 @@ export const InstallmentsView: React.FC<Props> = ({
   };
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedSlipForPrint ? 'print:hidden' : ''}`}>
+    <>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedSlipForPrint ? 'print:hidden' : ''}`}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
@@ -536,6 +537,7 @@ export const InstallmentsView: React.FC<Props> = ({
           </div>
         </div>
       )}
+      </div>
 
       {/* Printable Swarna Bachat Passbook Card Modal (3-Column Passbook Table) */}
       {selectedSlipForPrint && (
@@ -839,6 +841,6 @@ export const InstallmentsView: React.FC<Props> = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

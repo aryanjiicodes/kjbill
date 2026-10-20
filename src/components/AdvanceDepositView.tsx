@@ -148,7 +148,8 @@ export const AdvanceDepositView: React.FC<Props> = ({
   };
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedReceiptForPrint ? 'print:hidden' : ''}`}>
+    <>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 ${selectedReceiptForPrint ? 'print:hidden' : ''}`}>
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
@@ -552,6 +553,7 @@ export const AdvanceDepositView: React.FC<Props> = ({
           </div>
         </div>
       )}
+      </div>
 
       {/* Advance Receipt Print Modal (Styled matching the main Tax Bill) */}
       {selectedReceiptForPrint && (
@@ -783,6 +785,6 @@ export const AdvanceDepositView: React.FC<Props> = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

@@ -29,7 +29,7 @@ export const InstallmentsView: React.FC<Props> = ({
   const [activePlanForPayment, setActivePlanForPayment] = useState<InstallmentPlan | null>(null);
   const [selectedSlipForPrint, setSelectedSlipForPrint] = useState<{
     plan: InstallmentPlan;
-    payment: InstallmentPayment;
+    payment?: InstallmentPayment;
   } | null>(null);
 
   // New Plan form states
@@ -93,6 +93,7 @@ export const InstallmentsView: React.FC<Props> = ({
     StorageService.saveInstallmentPlan(newPlan);
     onRefresh();
     setShowNewPlanModal(false);
+    setSelectedSlipForPrint({ plan: newPlan });
   };
 
   const handleRecordPayment = (e: React.FormEvent) => {
@@ -281,18 +282,30 @@ export const InstallmentsView: React.FC<Props> = ({
                   )}
                 </div>
 
-                {/* Card Action */}
-                {plan.status !== 'Completed' && (
+                {/* Card Actions */}
+                <div className="flex items-center gap-2 mt-2">
+                  {plan.status !== 'Completed' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActivePlanForPayment(plan);
+                        setPayAmount(plan.monthlyAmount);
+                      }}
+                      className="flex-1 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-xl transition-colors shadow-xs"
+                    >
+                      + Record Payment
+                    </button>
+                  )}
                   <button
-                    onClick={() => {
-                      setActivePlanForPayment(plan);
-                      setPayAmount(plan.monthlyAmount);
-                    }}
-                    className="w-full py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-xl transition-colors shadow-xs"
+                    type="button"
+                    onClick={() => setSelectedSlipForPrint({ plan, payment: plan.payments[plan.payments.length - 1] })}
+                    className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 shadow-2xs"
+                    title="Print Swarna Bachat Passbook Card"
                   >
-                    + Record Installment Payment
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Passbook Card</span>
                   </button>
-                )}
+                </div>
               </div>
             );
           })}
@@ -513,30 +526,52 @@ export const InstallmentsView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Printable Installment Slip Modal (A4 Sheet matching Bill styling) */}
+      {/* Printable Swarna Bachat Passbook Card Modal (3-Column Passbook Table) */}
       {selectedSlipForPrint && (
-        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:bg-white print:fixed print:inset-0 print:overflow-visible">
+        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:static print:block print:w-full print:h-auto print:bg-white print:p-0 print:m-0">
           <style>{`
             @media print {
               html, body {
                 overflow: visible !important;
+                height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                background: #ffffff !important;
                 scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
               }
               ::-webkit-scrollbar {
                 display: none !important;
+                width: 0px !important;
+                height: 0px !important;
               }
+              @page {
+                size: A4 portrait;
+                margin: 5mm 5mm;
+              }
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+            }
+            .no-scrollbar::-webkit-scrollbar {
+              display: none !important;
+              width: 0px !important;
+            }
+            .no-scrollbar {
+              -ms-overflow-style: none !important;
+              scrollbar-width: none !important;
             }
           `}</style>
 
+          {/* Floating Print Action Bar */}
           <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white/95 backdrop-blur-md p-2 rounded-xl shadow-xl border border-stone-200">
             <button
               onClick={() => window.print()}
               className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
             >
               <Printer className="w-4 h-4" />
-              <span>Print A4 Receipt</span>
+              <span>Print Passbook Card (A4)</span>
             </button>
             <button
               onClick={() => setSelectedSlipForPrint(null)}
@@ -546,6 +581,7 @@ export const InstallmentsView: React.FC<Props> = ({
             </button>
           </div>
 
+          {/* Printable Sheet */}
           <div
             className="w-full max-w-[210mm] min-h-[296mm] bg-white text-stone-900 p-6 sm:p-7 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-4 mx-auto relative overflow-hidden text-[11px] leading-tight flex flex-col justify-between"
             style={{
@@ -563,11 +599,12 @@ export const InstallmentsView: React.FC<Props> = ({
               />
             </div>
 
-            <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
+            <div className="relative z-10 flex flex-col justify-between h-full space-y-3">
               <div>
-                {/* Header */}
+                {/* Header with safe vertical spacing for Hindi text */}
                 <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
                   <div className="flex items-center justify-between gap-3">
+                    {/* Left: Main Brand Logo */}
                     <div className="w-[190px] shrink-0 flex items-center">
                       <img
                         src={mainLogoImg}
@@ -576,14 +613,17 @@ export const InstallmentsView: React.FC<Props> = ({
                       />
                     </div>
 
-                    <div className="text-center flex-1 px-2">
-                      <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mb-0.5">
-                        ★ SWARNA BACHAT SAVINGS SCHEME RECEIPT ★
+                    {/* Center: Shop Details & Scheme Badge */}
+                    <div className="text-center flex-1 px-3">
+                      <div className="mb-2">
+                        <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-1 rounded-full text-[10.5px] tracking-wider uppercase shadow-xs">
+                          ★ SWARNA BACHAT MONTHLY SAVINGS PASSBOOK ★
+                        </span>
                       </div>
-                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 leading-tight">
+                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 mt-1.5 mb-1 leading-normal">
                         {settings.businessName}
                       </h1>
-                      <p className="text-[11px] text-stone-600 mt-0.5 max-w-md mx-auto leading-tight">
+                      <p className="text-[11px] text-stone-600 mt-1 max-w-md mx-auto leading-normal">
                         {settings.address}
                       </p>
                       <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
@@ -595,6 +635,7 @@ export const InstallmentsView: React.FC<Props> = ({
                       </div>
                     </div>
 
+                    {/* Right: BIS Hallmark Logo */}
                     <div className="w-[100px] shrink-0 flex flex-col items-center justify-center text-center">
                       <img
                         src={bisLogoImg}
@@ -608,52 +649,130 @@ export const InstallmentsView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Receipt Meta */}
-                <div className="grid grid-cols-2 gap-3 border border-stone-300 p-2.5 rounded-xs mb-3 text-xs bg-white/50 print:bg-transparent">
-                  <div>
-                    <span className="font-semibold text-stone-600">Receipt No: </span>
-                    <span className="font-mono font-bold text-stone-900">{selectedSlipForPrint.payment.receiptNumber}</span>
+                {/* Customer & Scheme Required Money Summary */}
+                <div className="grid grid-cols-12 gap-3 border border-stone-300 p-2.5 rounded-xs mb-3 text-xs bg-white/60 print:bg-transparent">
+                  <div className="col-span-7 space-y-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-stone-500 font-semibold text-[10.5px]">Passbook / Scheme No:</span>
+                      <span className="font-mono font-extrabold text-amber-950 text-xs">{selectedSlipForPrint.plan.planNumber}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-stone-500 font-semibold text-[10.5px]">Customer Name:</span>
+                      <span className="font-bold text-stone-900 text-sm">{selectedSlipForPrint.plan.customerName}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-stone-500 font-semibold text-[10.5px]">Mobile No:</span>
+                      <span className="font-mono text-stone-800 font-medium">+91 {selectedSlipForPrint.plan.customerMobile}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-stone-500 font-semibold text-[10.5px]">Scheme Name:</span>
+                      <span className="font-semibold text-stone-800">{selectedSlipForPrint.plan.schemeName}</span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-stone-600">Date & Time: </span>
-                    <span className="font-medium">{selectedSlipForPrint.payment.date} {selectedSlipForPrint.payment.time}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-stone-600">Customer: </span>
-                    <span className="font-bold text-stone-900">{selectedSlipForPrint.plan.customerName}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-semibold text-stone-600">Plan No: </span>
-                    <span className="font-mono font-bold text-amber-900">{selectedSlipForPrint.plan.planNumber}</span>
+
+                  <div className="col-span-5 border-l border-stone-200 pl-3 flex flex-col justify-center space-y-1.5 text-right">
+                    <div>
+                      <span className="text-stone-500 text-[10px] uppercase font-bold tracking-wider block">Monthly Installment</span>
+                      <span className="font-mono font-extrabold text-amber-900 text-base">
+                        {formatINR(selectedSlipForPrint.plan.monthlyAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10.5px] border-t border-stone-200 pt-1">
+                      <span className="text-stone-600">Total Scheme Target:</span>
+                      <span className="font-mono font-bold text-stone-900">{formatINR(selectedSlipForPrint.plan.totalAgreedAmount)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10.5px]">
+                      <span className="text-stone-600">Tenure / Duration:</span>
+                      <span className="font-bold text-stone-800">{selectedSlipForPrint.plan.installmentsCount} Months</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Scheme & Payment Table */}
-                <div className="border border-stone-300 rounded-xs overflow-hidden mb-3 text-xs bg-white/50 print:bg-transparent">
+                {/* 3-Column Passbook Table (Date, Installment, Sign) for manual or recorded entries */}
+                <div className="border border-stone-300 rounded-xs overflow-hidden mb-3 text-xs bg-white/70 print:bg-transparent">
                   <table className="w-full text-left border-collapse">
-                    <thead className="bg-stone-100/70 text-stone-700 font-bold border-b border-stone-300 text-[11px]">
+                    <thead className="bg-stone-100 text-stone-800 font-bold border-b border-stone-300 text-[11px] uppercase tracking-wider">
                       <tr>
-                        <th className="py-2 px-3">Scheme Name</th>
-                        <th className="py-2 px-3 text-center">Mode</th>
-                        <th className="py-2 px-3 text-right">Agreed Target</th>
-                        <th className="py-2 px-3 text-right">Total Paid So Far</th>
-                        <th className="py-2 px-3 text-right font-bold text-stone-900">Installment Paid Now</th>
+                        <th className="py-2 px-3 w-[35%] border-r border-stone-300">दिनांक / Date</th>
+                        <th className="py-2 px-3 w-[35%] text-right border-r border-stone-300">किस्त राशि / Installment (₹)</th>
+                        <th className="py-2 px-3 w-[30%] text-center">हस्ताक्षर / Sign</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      <tr>
-                        <td className="py-3 px-3 font-medium">
-                          {selectedSlipForPrint.plan.schemeName}
+                    <tbody className="divide-y divide-stone-200 text-[11px]">
+                      {Array.from({ length: Math.max(selectedSlipForPrint.plan.installmentsCount || 11, 11) }).map((_, index) => {
+                        const payment = selectedSlipForPrint.plan.payments[index];
+                        const isPaid = !!payment;
+                        const installmentNum = index + 1;
+
+                        return (
+                          <tr
+                            key={index}
+                            className={`h-9 ${isPaid ? 'bg-amber-50/20' : 'hover:bg-stone-50/30'}`}
+                          >
+                            {/* Column 1: Date */}
+                            <td className="py-1.5 px-3 border-r border-stone-300 align-middle">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-stone-500 font-mono">
+                                  M-{installmentNum.toString().padStart(2, '0')}:
+                                </span>
+                                {isPaid ? (
+                                  <div className="text-right">
+                                    <span className="font-mono font-bold text-stone-900">{payment.date}</span>
+                                    {payment.receiptNumber && (
+                                      <span className="text-[9px] text-stone-400 block font-mono">#{payment.receiptNumber}</span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-stone-400 font-mono tracking-widest text-[11px]">
+                                    ____ / ____ / 202___
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Column 2: Installment Amount (₹) */}
+                            <td className="py-1.5 px-3 text-right border-r border-stone-300 font-mono align-middle">
+                              {isPaid ? (
+                                <div>
+                                  <span className="font-bold text-stone-950 text-xs">{formatINR(payment.amount)}</span>
+                                  <span className="text-[9px] text-emerald-700 block font-sans font-semibold">({payment.paymentMode})</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <span className="text-stone-400 text-[10px] font-sans">₹</span>
+                                  <span className="text-stone-700 font-semibold">{formatINR(selectedSlipForPrint.plan.monthlyAmount).replace('₹', '')}</span>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Column 3: Sign */}
+                            <td className="py-1.5 px-3 text-center align-middle">
+                              {isPaid ? (
+                                <div className="flex flex-col items-center justify-center">
+                                  <span className="text-[9.5px] font-semibold text-emerald-800">✓ Received & Signed</span>
+                                  <span className="text-[8.5px] text-stone-400">{payment.staffName || 'Showroom Desk'}</span>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center py-0.5">
+                                  <div className="w-24 border-b border-stone-300"></div>
+                                  <span className="text-[8px] text-stone-400 mt-0.5">Counter Sign</span>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {/* Totals Summary Row */}
+                      <tr className="bg-stone-100/90 font-bold border-t-2 border-stone-300 text-stone-900 text-xs">
+                        <td className="py-2 px-3 border-r border-stone-300 uppercase tracking-wider text-[10px]">
+                          Total Deposited :
                         </td>
-                        <td className="py-3 px-3 text-center font-semibold">{selectedSlipForPrint.payment.paymentMode}</td>
-                        <td className="py-3 px-3 text-right font-mono font-semibold">
-                          {formatINR(selectedSlipForPrint.plan.totalAgreedAmount)}
-                        </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-800">
+                        <td className="py-2 px-3 text-right border-r border-stone-300 font-mono text-emerald-800 font-extrabold text-sm">
                           {formatINR(selectedSlipForPrint.plan.totalPaid)}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-stone-950 text-sm">
-                          {formatINR(selectedSlipForPrint.payment.amount)}
+                        <td className="py-2 px-3 text-center font-mono text-[10px] text-stone-600">
+                          {selectedSlipForPrint.plan.payments.length} / {selectedSlipForPrint.plan.installmentsCount} Paid
                         </td>
                       </tr>
                     </tbody>
@@ -661,9 +780,9 @@ export const InstallmentsView: React.FC<Props> = ({
                 </div>
 
                 {/* Balance & Next Due Status Strip */}
-                <div className="grid grid-cols-2 gap-3 border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-amber-50/40 print:bg-transparent">
+                <div className="grid grid-cols-2 gap-3 border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-amber-50/50 print:bg-transparent">
                   <div>
-                    <span className="font-semibold text-stone-600">Remaining Balance on Plan: </span>
+                    <span className="font-semibold text-stone-600">Remaining Plan Balance: </span>
                     <span className="font-mono font-bold text-rose-700 text-sm">
                       {formatINR(selectedSlipForPrint.plan.remainingAmount)}
                     </span>
@@ -676,44 +795,42 @@ export const InstallmentsView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Amount in words */}
-                <div className="border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-stone-50/60 print:bg-transparent">
-                  <span className="font-semibold text-stone-600">Amount Received in Words: </span>
-                  <span className="font-bold text-stone-900 italic">
-                    {numberToIndianWords(selectedSlipForPrint.payment.amount)}
-                  </span>
-                </div>
-
-                {/* Terms */}
-                <div className="text-[10px] text-stone-600 space-y-1 border-t border-stone-200 pt-3">
+                {/* Passbook Terms & Instructions */}
+                <div className="text-[9.5px] text-stone-600 space-y-0.5 border-t border-stone-200 pt-2.5 leading-tight">
                   <p>
-                    <strong>Scheme Acknowledgement:</strong> This is a monthly installment deposit receipt for the Swarna Bachat monthly savings plan with Kamakhya Jewellers. Installments deposited are redeemable towards purchases of certified BIS 916 hallmarked jewellery ornaments upon maturity.
+                    <strong>नियम व शर्तें (Terms & Instructions):</strong>
                   </p>
                   <p>
-                    Please preserve all monthly deposit slips for smooth redemption upon maturity. Subject to showroom terms & local jurisdiction.
+                    1. कृपया प्रत्येक मासिक किस्त जमा करते समय यह पासबुक कार्ड काउंटर पर अवश्य प्रस्तुत करें। (Kindly present this passbook card at showroom counter for every monthly deposit.)
+                  </p>
+                  <p>
+                    2. मासिक किस्त नियत तिथि पर या उससे पूर्व जमा करें। (Monthly installment must be deposited on or before the due date.)
+                  </p>
+                  <p>
+                    3. योजना पूर्ण होने पर कुल संचित राशि के समतुल्य 916 हॉलमार्क आभूषण प्राप्त करें। (Upon completion of scheme tenure, the full accumulated amount is redeemable towards purchase of certified BIS 916 hallmarked jewellery.)
                   </p>
                 </div>
               </div>
 
-              {/* Signatures Area matching main bill */}
-              <div className="grid grid-cols-12 gap-3 pt-4 border-t border-stone-300">
+              {/* Signatures Footer matching main bill */}
+              <div className="grid grid-cols-12 gap-3 pt-3 border-t border-stone-300">
                 <div className="col-span-6 flex flex-col justify-end">
                   <div className="w-44 border-b border-stone-400 mb-1"></div>
-                  <span className="text-[10px] text-stone-500 font-medium">Customer Signature / Acknowledged</span>
+                  <span className="text-[10px] text-stone-500 font-medium">Customer Signature / धारक के हस्ताक्षर</span>
                 </div>
 
                 <div className="col-span-6 text-center flex flex-col justify-end items-center">
-                  <div className="h-14 flex items-end justify-center mb-0.5">
+                  <div className="h-12 flex items-end justify-center mb-0.5">
                     <img
                       src={signatureImg}
                       alt="Authorised Signatory"
-                      className="max-h-14 w-auto object-contain"
+                      className="max-h-12 w-auto object-contain"
                     />
                   </div>
                   <div className="w-48 border-t border-stone-400 pt-0.5 text-[11px] font-bold text-stone-800">
                     For {settings.businessName}
                   </div>
-                  <div className="text-[9.5px] text-stone-500">Authorised Signatory</div>
+                  <div className="text-[9.5px] text-stone-500">Authorised Signatory / अधिकृत हस्ताक्षर</div>
                 </div>
               </div>
             </div>

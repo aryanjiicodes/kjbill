@@ -540,17 +540,30 @@ export const AdvanceDepositView: React.FC<Props> = ({
 
       {/* Advance Receipt Print Modal (Styled matching the main Tax Bill) */}
       {selectedReceiptForPrint && (
-        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:bg-white print:fixed print:inset-0 print:overflow-visible">
+        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:static print:block print:w-full print:h-auto print:bg-white print:p-0 print:m-0">
           <style>{`
             @media print {
               html, body {
                 overflow: visible !important;
+                height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                background: #ffffff !important;
                 scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
               }
               ::-webkit-scrollbar {
                 display: none !important;
+                width: 0px !important;
+                height: 0px !important;
+              }
+              @page {
+                size: A4 portrait;
+                margin: 5mm 5mm;
+              }
+              body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
             }
           `}</style>
@@ -606,14 +619,16 @@ export const AdvanceDepositView: React.FC<Props> = ({
                     </div>
 
                     {/* Center: Shop Details & GSTIN */}
-                    <div className="text-center flex-1 px-2">
-                      <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mb-0.5">
-                        ★ CUSTOMER ADVANCE DEPOSIT ACKNOWLEDGEMENT ★
+                    <div className="text-center flex-1 px-3">
+                      <div className="mb-2">
+                        <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-1 rounded-full text-[10.5px] tracking-wider uppercase shadow-xs">
+                          ★ CUSTOMER ADVANCE DEPOSIT ACKNOWLEDGEMENT ★
+                        </span>
                       </div>
-                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 leading-tight">
+                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 mt-1.5 mb-1 leading-normal">
                         {settings.businessName}
                       </h1>
-                      <p className="text-[11px] text-stone-600 mt-0.5 max-w-md mx-auto leading-tight">
+                      <p className="text-[11px] text-stone-600 mt-1 max-w-md mx-auto leading-normal">
                         {settings.address}
                       </p>
                       <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">

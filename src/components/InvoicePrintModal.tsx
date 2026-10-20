@@ -64,14 +64,16 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                 </div>
 
                 {/* Center: Shop Details & GSTIN */}
-                <div className="text-center flex-1 px-2">
-                  <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mb-0.5">
-                    ★ GST TAX INVOICE ★
+                <div className="text-center flex-1 px-3">
+                  <div className="mb-2">
+                    <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-1 rounded-full text-[10.5px] tracking-wider uppercase shadow-xs">
+                      ★ GST TAX INVOICE ★
+                    </span>
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 leading-tight">
+                  <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 mt-1.5 mb-1 leading-normal">
                     {settings.businessName}
                   </h1>
-                  <p className="text-[11px] text-stone-600 mt-0.5 max-w-md mx-auto leading-tight">
+                  <p className="text-[11px] text-stone-600 mt-1 max-w-md mx-auto leading-normal">
                     {settings.address}
                   </p>
                   <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
@@ -623,8 +625,8 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
   const totalOtherCharges = invoice.items.reduce((s, i) => s + (i.otherCharges || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex flex-col items-center p-2 sm:p-4 print:p-0 print:bg-white print:fixed print:inset-0 print:overflow-visible">
-      {/* Print CSS Styles for clean 2-page A4 output without scrollbars */}
+    <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex flex-col items-center p-2 sm:p-4 print:static print:block print:w-full print:h-auto print:bg-white print:p-0 print:m-0 print-page-container">
+      {/* Print CSS Styles for clean 2-page A4 output without scrollbars or double-stamping */}
       <style>{`
         @media print {
           html, body {
@@ -632,8 +634,18 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
             height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: #ffffff !important;
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
+          }
+          .print-page-container {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
           }
           ::-webkit-scrollbar {
             display: none !important;
@@ -642,7 +654,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
           }
           @page {
             size: A4 portrait;
-            margin: 6mm 6mm;
+            margin: 5mm 5mm;
           }
           body {
             -webkit-print-color-adjust: exact !important;
@@ -787,7 +799,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
       )}
 
       {/* Sheet 1: ORIGINAL FOR RECIPIENT (CUSTOMER COPY) */}
-      <div className="w-full flex flex-col items-center mb-6 print:m-0">
+      <div className="w-full flex flex-col items-center mb-6 print:m-0 print:p-0 print:block">
         <InvoiceSheet
           ref={page1Ref}
           invoice={invoice}
@@ -801,7 +813,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
 
       {/* Sheet 2: DUPLICATE FOR SUPPLIER (SHOP COPY) */}
       {printTwoPages && (
-        <div className="w-full flex flex-col items-center mb-6 print:m-0 print-break-page">
+        <div className="w-full flex flex-col items-center mb-6 print:m-0 print:p-0 print:block print-break-page">
           <InvoiceSheet
             ref={page2Ref}
             invoice={invoice}

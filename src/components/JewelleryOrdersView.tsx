@@ -674,9 +674,12 @@ export const JewelleryOrdersView: React.FC<Props> = ({
               <div className="text-[10px] font-bold uppercase tracking-wider text-stone-600">
                 Customer Jewellery Order Confirmation Sheet
               </div>
-              <h2 className="text-2xl font-serif font-bold text-stone-900 mt-1">
-                {settings.businessName}
+              <h2 className="text-2xl font-serif font-extrabold tracking-wider text-stone-900 mt-1 uppercase">
+                KAMAKHYA JEWELLERS
               </h2>
+              <div className="text-xs font-serif text-amber-950 font-bold mb-1">
+                कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
+              </div>
               <p className="text-xs text-stone-600">{settings.address}</p>
               <p className="text-xs text-stone-600">Contact: +91 {settings.mobile} · GSTIN: {settings.gstin}</p>
             </div>

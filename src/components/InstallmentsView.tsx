@@ -615,26 +615,30 @@ export const InstallmentsView: React.FC<Props> = ({
                 {/* Header with safe vertical spacing for Hindi text */}
                 <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
                   <div className="flex items-center justify-between gap-3">
-                    {/* Left: Main Brand Logo */}
-                    <div className="w-[190px] shrink-0 flex items-center">
+                    {/* Left: Main Brand Logo (Gold Round KJ Emblem) */}
+                    <div className="w-[110px] shrink-0 flex flex-col items-center justify-center">
                       <img
                         src={mainLogoImg}
-                        alt={settings.businessName}
-                        className="max-h-[64px] w-auto object-contain"
+                        alt="KAMAKHYA JEWELLERS"
+                        className="h-[76px] w-[76px] object-contain drop-shadow-xs"
                       />
+                      <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">Est. 1998</span>
                     </div>
 
                     {/* Center: Shop Details & Scheme Badge */}
                     <div className="text-center flex-1 px-3">
-                      <div className="mb-2">
+                      <div className="mb-1.5">
                         <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-1 rounded-full text-[10.5px] tracking-wider uppercase shadow-xs">
                           ★ SWARNA BACHAT MONTHLY SAVINGS PASSBOOK ★
                         </span>
                       </div>
-                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 mt-1.5 mb-1 leading-normal">
-                        {settings.businessName}
+                      <h1 className="text-2xl sm:text-3xl font-serif font-extrabold tracking-wider text-stone-900 mt-1 mb-0.5 uppercase">
+                        KAMAKHYA JEWELLERS
                       </h1>
-                      <p className="text-[11px] text-stone-600 mt-1 max-w-md mx-auto leading-normal">
+                      <div className="text-[11.5px] font-serif text-amber-950 font-bold mb-1">
+                        कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
+                      </div>
+                      <p className="text-[11px] text-stone-600 max-w-md mx-auto leading-normal">
                         {settings.address}
                       </p>
                       <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">

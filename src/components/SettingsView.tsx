@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShopSettings } from '../types';
 import { StorageService } from '../services/storage';
-import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle, CheckCircle2, X } from 'lucide-react';
 
 interface Props {
   settings: ShopSettings;
@@ -17,6 +17,7 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
     }
   }, [settings]);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [dbStatus, setDbStatus] = useState<{ testing: boolean; result: { ok: boolean; message: string; code?: string } | null }>({
@@ -27,6 +28,13 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
     syncing: false,
     message: null,
   });
+
+  useEffect(() => {
+    if (showSaveModal) {
+      const timer = setTimeout(() => setShowSaveModal(false), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [showSaveModal]);
 
   const handleTestDatabase = async () => {
     setDbStatus({ testing: true, result: null });
@@ -46,6 +54,7 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
     StorageService.saveSettings(formData);
     onRefresh();
     setSavedSuccess(true);
+    setShowSaveModal(true);
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
@@ -481,6 +490,59 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
           </div>
         )}
       </div>
+      {/* Settings Saved Confirmation Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 max-w-md w-full p-6 text-center space-y-4 relative">
+            <button
+              onClick={() => setShowSaveModal(false)}
+              className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 p-1 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <CheckCircle2 className="w-9 h-9" />
+            </div>
+
+            <div>
+              <h3 className="text-xl font-serif font-bold text-stone-900">
+                Settings Saved Successfully!
+              </h3>
+              <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
+                Your shop details, GST rates, bank accounts, and invoice terms have been updated locally and synced to your cloud database.
+              </p>
+            </div>
+
+            <div className="bg-stone-50 rounded-xl p-3.5 text-left text-xs space-y-2 border border-stone-200">
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500 font-medium">Showroom Name:</span>
+                <span className="font-bold text-stone-900">{formData.businessName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500 font-medium">Owner / Signatory:</span>
+                <span className="font-semibold text-stone-800">{formData.ownerName}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500 font-medium">GSTIN:</span>
+                <span className="font-mono font-bold text-stone-800">{formData.gstin || 'Not Configured'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500 font-medium">Contact Phone:</span>
+                <span className="font-mono font-semibold text-stone-800">+91 {formData.mobile}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowSaveModal(false)}
+              className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs rounded-xl shadow-sm transition-colors"
+            >
+              Done / Continue
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

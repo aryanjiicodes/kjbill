@@ -25,8 +25,8 @@ import { AdvanceDepositView } from './components/AdvanceDepositView';
 import { InstallmentsView } from './components/InstallmentsView';
 import { JewelleryOrdersView } from './components/JewelleryOrdersView';
 import { InventoryView } from './components/InventoryView';
-import { MetalRatesView } from './components/MetalRatesView';
 import { SettingsView } from './components/SettingsView';
+import { fetchLiveBullionRates } from './services/goldApi';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
@@ -52,13 +52,46 @@ export default function App() {
   const [orders, setOrders] = useState<JewelleryOrder[]>(StorageService.getOrders());
   const [inventory, setInventory] = useState<InventoryItem[]>(StorageService.getInventory());
   const [printInvoice, setPrintInvoice] = useState<Invoice | null>(null);
+  const [isSyncingRates, setIsSyncingRates] = useState(false);
 
   useEffect(() => {
     // Initial fetch from Supabase Cloud
     StorageService.initCloudSync().then(() => {
       refreshAllData();
+      // Auto-sync live bullion rates from custom-gold-api if in API mode
+      const savedRates = StorageService.getRates();
+      if (savedRates.rateMode !== 'manual') {
+        handleSyncRatesFromApi();
+      }
     });
   }, []);
+
+  const handleSyncRatesFromApi = async () => {
+    setIsSyncingRates(true);
+    try {
+      const current = StorageService.getRates();
+      const live = await fetchLiveBullionRates(current.apiSource || 'default');
+      const updatedRates: MetalRates = {
+        ...current,
+        gold24k: live.gold24k,
+        gold22k: live.gold22k,
+        gold18k: live.gold18k,
+        gold14k: live.gold14k,
+        silver999: live.silver999,
+        silver925: live.silver925,
+        updatedAt: live.timestamp,
+        updatedBy: `Bullion API (${live.provider})`,
+        rateMode: 'api',
+      };
+      StorageService.saveRates(updatedRates, `Bullion API (${live.provider})`);
+      setRates(updatedRates);
+      setRateHistory(StorageService.getRateHistory());
+    } catch (err) {
+      console.warn('Live Bullion API sync notice:', err);
+    } finally {
+      setIsSyncingRates(false);
+    }
+  };
 
   const refreshAllData = () => {
     setSettings(StorageService.getSettings());
@@ -136,6 +169,8 @@ export default function App() {
         rates={rates}
         onNewInvoice={() => setActiveTab('billing')}
         onLock={handleLock}
+        onSyncRates={handleSyncRatesFromApi}
+        isSyncingRates={isSyncingRates}
       />
 
       {/* Main Content Area */}
@@ -229,17 +264,13 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'rates' && (
-          <MetalRatesView
+        {activeTab === 'settings' && (
+          <SettingsView
+            settings={settings}
             rates={rates}
             rateHistory={rateHistory}
-            currentStaffName={currentStaffName}
             onRefresh={refreshAllData}
           />
-        )}
-
-        {activeTab === 'settings' && (
-          <SettingsView settings={settings} onRefresh={refreshAllData} />
         )}
       </main>
 

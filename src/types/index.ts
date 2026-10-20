@@ -35,6 +35,8 @@ export interface MetalRates {
   platinum: number;
   updatedAt: string;
   updatedBy: string;
+  rateMode?: 'api' | 'manual';
+  apiSource?: 'default' | 'ibja';
 }
 
 export interface MetalRateHistoryEntry {

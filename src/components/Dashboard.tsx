@@ -199,12 +199,12 @@ export const Dashboard: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('rates')}
+          onClick={() => setActiveTab('settings')}
           className="flex flex-col items-center justify-center p-3.5 bg-stone-800 hover:bg-stone-700 text-stone-100 rounded-xl shadow-sm transition-all hover:-translate-y-0.5"
         >
           <TrendingUp className="w-5 h-5 mb-1.5 text-amber-400" />
-          <span className="text-xs font-bold text-center">Daily Rates</span>
-          <span className="text-[10px] text-stone-400">22K / 24K Gold</span>
+          <span className="text-xs font-bold text-center">Rates & Settings</span>
+          <span className="text-[10px] text-stone-400">Live API / Manual</span>
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRole, ShopSettings, MetalRates } from '../types';
-import { Plus, ShieldCheck, User, Sparkles, TrendingUp, Lock } from 'lucide-react';
+import { Plus, ShieldCheck, User, Sparkles, TrendingUp, Lock, RefreshCw } from 'lucide-react';
 
 export type NavTab =
   | 'dashboard'
@@ -11,7 +11,6 @@ export type NavTab =
   | 'installments'
   | 'orders'
   | 'inventory'
-  | 'rates'
   | 'settings';
 
 interface Props {
@@ -23,6 +22,8 @@ interface Props {
   rates: MetalRates;
   onNewInvoice: () => void;
   onLock: () => void;
+  onSyncRates?: () => void;
+  isSyncingRates?: boolean;
 }
 
 export const Header: React.FC<Props> = ({
@@ -34,6 +35,8 @@ export const Header: React.FC<Props> = ({
   rates,
   onNewInvoice,
   onLock,
+  onSyncRates,
+  isSyncingRates,
 }) => {
   const navItems: { id: NavTab; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -44,47 +47,68 @@ export const Header: React.FC<Props> = ({
     { id: 'installments', label: 'Installments' },
     { id: 'orders', label: 'Orders' },
     { id: 'inventory', label: 'Stock' },
-    { id: 'rates', label: 'Daily Rates' },
     { id: 'settings', label: 'Settings' },
   ];
 
   return (
     <header className="sticky top-0 z-40 bg-stone-900 border-b border-stone-800 text-stone-100 print:hidden shadow-md">
-      {/* Rate Ticker Bar */}
+      {/* Rate Ticker Bar with Live API / Manual toggle support */}
       <div className="bg-stone-950/90 border-b border-stone-800/80 px-4 py-1 text-xs text-stone-300 flex items-center justify-between overflow-x-auto whitespace-nowrap scrollbar-none">
-        <div className="flex items-center gap-4 text-[11px]">
+        <div className="flex items-center gap-3 text-[11px]">
           <div className="flex items-center gap-1.5 text-amber-400 font-semibold tracking-wide">
             <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
-            <span>TODAY'S DELHI RATES:</span>
+            <span>METAL RATES:</span>
           </div>
+          <span
+            className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded border ${
+              rates.rateMode === 'manual'
+                ? 'bg-amber-950 text-amber-300 border-amber-800'
+                : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+            }`}
+          >
+            {rates.rateMode === 'manual' ? 'MANUAL' : 'LIVE BULLION API'}
+          </span>
           <div className="flex items-center gap-1">
-            <span className="text-stone-400">Gold 24K:</span>
+            <span className="text-stone-400">24K:</span>
             <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold24k}/g</span>
           </div>
           <span className="text-stone-700">·</span>
           <div className="flex items-center gap-1">
-            <span className="text-stone-400">Gold 22K (916):</span>
+            <span className="text-stone-400">22K (916):</span>
             <span className="font-mono font-bold text-amber-300 tabular-nums">₹{rates.gold22k}/g</span>
           </div>
           <span className="text-stone-700">·</span>
           <div className="flex items-center gap-1">
-            <span className="text-stone-400">Gold 18K:</span>
+            <span className="text-stone-400">18K:</span>
             <span className="font-mono font-bold text-stone-200 tabular-nums">₹{rates.gold18k}/g</span>
           </div>
           <span className="text-stone-700">·</span>
           <div className="flex items-center gap-1">
-            <span className="text-stone-400">Silver 999:</span>
+            <span className="text-stone-400">Silver:</span>
             <span className="font-mono font-bold text-slate-200 tabular-nums">₹{rates.silver999}/g</span>
           </div>
-          <span className="text-stone-700">·</span>
-          <div className="flex items-center gap-1">
-            <span className="text-stone-400">Silver 925:</span>
-            <span className="font-mono font-bold text-slate-200 tabular-nums">₹{rates.silver925}/g</span>
-          </div>
+          {onSyncRates && (
+            <button
+              onClick={onSyncRates}
+              disabled={isSyncingRates}
+              className="ml-2 flex items-center gap-1 px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white rounded text-[10px] font-medium border border-stone-700 transition-colors"
+              title="Sync latest live prices from Custom Gold API"
+            >
+              <RefreshCw className={`w-3 h-3 ${isSyncingRates ? 'animate-spin text-amber-400' : ''}`} />
+              <span>{isSyncingRates ? 'Syncing...' : 'Sync API'}</span>
+            </button>
+          )}
         </div>
 
-        <div className="text-[11px] text-stone-400 hidden md:block">
-          Owner: <span className="text-stone-200 font-semibold">{settings.ownerName}</span> · Mob: {settings.mobile}
+        <div className="text-[11px] text-stone-400 hidden md:flex items-center gap-2">
+          <span>Owner: <strong className="text-stone-200">{settings.ownerName}</strong></span>
+          <span className="text-stone-700">·</span>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className="text-amber-400/90 hover:text-amber-300 hover:underline"
+          >
+            Configure Rates & API
+          </button>
         </div>
       </div>
 

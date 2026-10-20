@@ -1,21 +1,97 @@
 import React, { useState, useEffect } from 'react';
-import { ShopSettings } from '../types';
+import { ShopSettings, MetalRates, MetalRateHistoryEntry } from '../types';
 import { StorageService } from '../services/storage';
-import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle, CheckCircle2, X } from 'lucide-react';
+import { fetchLiveBullionRates } from '../services/goldApi';
+import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle, CheckCircle2, X, TrendingUp, Globe, Sparkles } from 'lucide-react';
 
 interface Props {
   settings: ShopSettings;
+  rates?: MetalRates;
+  rateHistory?: MetalRateHistoryEntry[];
   onRefresh: () => void;
 }
 
-export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
+export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) => {
   const [formData, setFormData] = useState<ShopSettings>({ ...settings });
+
+  // Metal Rates States (Bullion API or Manual)
+  const currentRates = rates || StorageService.getRates();
+  const [rateMode, setRateMode] = useState<'api' | 'manual'>(currentRates.rateMode || 'api');
+  const [apiSource, setApiSource] = useState<'default' | 'ibja'>(currentRates.apiSource || 'default');
+  const [gold24k, setGold24k] = useState<number>(currentRates.gold24k || 14920);
+  const [gold22k, setGold22k] = useState<number>(currentRates.gold22k || 13677);
+  const [gold18k, setGold18k] = useState<number>(currentRates.gold18k || 11190);
+  const [gold14k, setGold14k] = useState<number>(currentRates.gold14k || 8703);
+  const [silver999, setSilver999] = useState<number>(currentRates.silver999 || 208);
+  const [silver925, setSilver925] = useState<number>(currentRates.silver925 || 192);
+
+  const [isFetchingRates, setIsFetchingRates] = useState(false);
+  const [rateNotice, setRateNotice] = useState<string | null>(null);
+  const [rateError, setRateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (settings && settings.businessName) {
       setFormData({ ...settings });
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (rates) {
+      setRateMode(rates.rateMode || 'api');
+      setApiSource(rates.apiSource || 'default');
+      setGold24k(rates.gold24k);
+      setGold22k(rates.gold22k);
+      setGold18k(rates.gold18k);
+      setGold14k(rates.gold14k);
+      setSilver999(rates.silver999);
+      setSilver925(rates.silver925);
+    }
+  }, [rates]);
+
+  const handleFetchApiRates = async () => {
+    setIsFetchingRates(true);
+    setRateNotice(null);
+    setRateError(null);
+    try {
+      const res = await fetchLiveBullionRates(apiSource);
+      setGold24k(res.gold24k);
+      setGold22k(res.gold22k);
+      setGold18k(res.gold18k);
+      setGold14k(res.gold14k);
+      setSilver999(res.silver999);
+      setSilver925(res.silver925);
+      setRateNotice(`Live rates fetched successfully from ${res.source}!`);
+
+      const updatedRates: MetalRates = {
+        ...(rates || StorageService.getRates()),
+        gold24k: res.gold24k,
+        gold22k: res.gold22k,
+        gold18k: res.gold18k,
+        gold14k: res.gold14k,
+        silver999: res.silver999,
+        silver925: res.silver925,
+        rateMode: 'api',
+        apiSource,
+        updatedAt: res.timestamp,
+        updatedBy: `Bullion API (${res.provider})`,
+      };
+      StorageService.saveRates(updatedRates, `Bullion API (${res.provider})`);
+      onRefresh();
+    } catch (err: any) {
+      setRateError(err.message || 'Could not connect to custom-gold-api. You can enter rates manually below.');
+    } finally {
+      setIsFetchingRates(false);
+    }
+  };
+
+  const handleAutoCalcGold = (val24k: number) => {
+    setGold24k(val24k);
+    if (val24k > 0) {
+      setGold22k(Math.round(val24k * 0.916));
+      setGold18k(Math.round(val24k * 0.75));
+      setGold14k(Math.round(val24k * (14 / 24)));
+    }
+  };
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [importText, setImportText] = useState('');
@@ -52,6 +128,22 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     StorageService.saveSettings(formData);
+
+    const updatedRates: MetalRates = {
+      ...(rates || StorageService.getRates()),
+      gold24k,
+      gold22k,
+      gold18k,
+      gold14k,
+      silver999,
+      silver925,
+      rateMode,
+      apiSource,
+      updatedAt: new Date().toISOString(),
+      updatedBy: rateMode === 'api' ? 'Bullion API' : formData.ownerName || 'Manual Entry',
+    };
+    StorageService.saveRates(updatedRates, rateMode === 'api' ? 'Bullion API' : formData.ownerName || 'Manual Entry');
+
     onRefresh();
     setSavedSuccess(true);
     setShowSaveModal(true);
@@ -207,12 +299,220 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
           </div>
         </div>
 
-        {/* 2. Bank Details & Scan to Pay QR */}
+        {/* 2. Gold & Silver Metal Rates (Live API or Manual Entry) */}
+        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-stone-200 pb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-amber-600" />
+              <div>
+                <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
+                  2. Gold & Silver Metal Rates (Live Bullion API or Manual)
+                </h2>
+                <span className="text-[11px] text-stone-500">
+                  Select whether counter billing rates are fetched automatically from custom-gold-api or entered manually.
+                </span>
+              </div>
+            </div>
+
+            {/* Mode Toggle Switch */}
+            <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setRateMode('api')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  rateMode === 'api'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>Live Bullion API</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRateMode('manual')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                  rateMode === 'manual'
+                    ? 'bg-stone-900 text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                <span>✍️ Add Manually</span>
+              </button>
+            </div>
+          </div>
+
+          {/* If API Mode */}
+          {rateMode === 'api' && (
+            <div className="space-y-4 bg-emerald-50/40 border border-emerald-200/80 rounded-xl p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                      API Provider & Source:
+                    </span>
+                    <select
+                      value={apiSource}
+                      onChange={(e) => setApiSource(e.target.value as any)}
+                      className="px-2.5 py-1 text-xs bg-white border border-emerald-300 rounded-lg font-medium text-stone-800 focus:outline-none"
+                    >
+                      <option value="default">All India Bullion (Surat - Smart API)</option>
+                      <option value="ibja">Official IBJA (ibjarates.com)</option>
+                    </select>
+                  </div>
+                  <p className="text-[11px] text-emerald-800 font-mono">
+                    Endpoint: https://custom-gold-api-pu4h.onrender.com/{apiSource === 'ibja' ? 'gold/ibja' : 'gold'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleFetchApiRates}
+                  disabled={isFetchingRates}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isFetchingRates ? 'animate-spin' : ''}`} />
+                  <span>{isFetchingRates ? 'Fetching Bullion API...' : 'Fetch Latest Rates Now'}</span>
+                </button>
+              </div>
+
+              {rateNotice && (
+                <div className="bg-emerald-100 text-emerald-900 text-xs px-3 py-2 rounded-lg border border-emerald-300 flex items-center gap-1.5 font-medium">
+                  <CheckCircle className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>{rateNotice}</span>
+                </div>
+              )}
+
+              {rateError && (
+                <div className="bg-rose-100 text-rose-900 text-xs px-3 py-2 rounded-lg border border-rose-300 flex items-center gap-1.5 font-medium">
+                  <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0" />
+                  <span>{rateError}</span>
+                </div>
+              )}
+
+              {/* Live Preview Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+                <div className="bg-white p-3 rounded-xl border border-stone-200">
+                  <span className="text-[10px] text-stone-500 font-semibold block uppercase">Gold 24K (Pure)</span>
+                  <span className="text-base font-bold font-mono text-amber-950">₹{gold24k}/g</span>
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold24k * 10).toLocaleString('en-IN')}/10g</span>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-amber-300 bg-amber-50/20">
+                  <span className="text-[10px] text-amber-800 font-semibold block uppercase">Gold 22K (916)</span>
+                  <span className="text-base font-bold font-mono text-amber-900">₹{gold22k}/g</span>
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{(gold22k * 10).toLocaleString('en-IN')}/10g</span>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-stone-200">
+                  <span className="text-[10px] text-stone-500 font-semibold block uppercase">Gold 18K (750)</span>
+                  <span className="text-base font-bold font-mono text-stone-800">₹{gold18k}/g</span>
+                  <span className="text-[10px] text-stone-400 block mt-0.5">75% Purity</span>
+                </div>
+                <div className="bg-white p-3 rounded-xl border border-stone-200">
+                  <span className="text-[10px] text-stone-500 font-semibold block uppercase">Silver 999 (Pure)</span>
+                  <span className="text-base font-bold font-mono text-slate-800">₹{silver999}/g</span>
+                  <span className="text-[10px] text-stone-400 block mt-0.5">₹{(silver999 * 1000).toLocaleString('en-IN')}/kg</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* If Manual Mode */}
+          {rateMode === 'manual' && (
+            <div className="space-y-4 bg-stone-50 border border-stone-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-stone-800 uppercase tracking-wide">
+                  Custom Manual Metal Rates (₹ / Gram)
+                </span>
+                <span className="text-[11px] text-stone-500">
+                  Type 24K rate to auto-calculate 22K and 18K
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Gold 24K (Pure 999) *
+                  </label>
+                  <input
+                    type="number"
+                    value={gold24k}
+                    onChange={(e) => handleAutoCalcGold(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg text-amber-950"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Gold 22K (Hallmark 916) *
+                  </label>
+                  <input
+                    type="number"
+                    value={gold22k}
+                    onChange={(e) => setGold22k(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg text-amber-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 block mb-1">
+                    Gold 18K (Hallmark 750)
+                  </label>
+                  <input
+                    type="number"
+                    value={gold18k}
+                    onChange={(e) => setGold18k(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-stone-700 block mb-1">
+                    Gold 14K (Hallmark 585)
+                  </label>
+                  <input
+                    type="number"
+                    value={gold14k}
+                    onChange={(e) => setGold14k(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Silver 999 (Pure)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={silver999}
+                    onChange={(e) => setSilver999(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-stone-700 block mb-1">
+                    Silver 925 (Sterling)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={silver925}
+                    onChange={(e) => setSilver925(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 text-xs font-mono font-bold bg-white border border-stone-300 rounded-lg"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Bank Details & Scan to Pay QR */}
         <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
           <div className="flex items-center gap-2 border-b border-stone-200 pb-2">
             <Building2 className="w-5 h-5 text-amber-600" />
             <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
-              2. Bank Account Details (Printed on Invoices & Scan-to-Pay QR)
+              3. Bank Account Details (Printed on Invoices & Scan-to-Pay QR)
             </h2>
           </div>
 

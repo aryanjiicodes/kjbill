@@ -68,6 +68,19 @@ async function syncToSupabase(table: string, payload: Record<string, any>) {
   }
 }
 
+// Background delete helper to Supabase (safe & non-blocking)
+async function deleteFromSupabase(table: string, id: string) {
+  if (!isSupabaseConfigured) return;
+  try {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) {
+      console.error(`Supabase delete notice on table ${table}:`, error.message);
+    }
+  } catch (err) {
+    console.warn(`Supabase background delete error for table ${table}:`, err);
+  }
+}
+
 export const StorageService = {
   // Initial cloud sync: loads from Supabase when available
   async initCloudSync(): Promise<void> {
@@ -183,6 +196,13 @@ export const StorageService = {
     return customer;
   },
 
+  deleteCustomer(id: string): boolean {
+    const list = this.getCustomers().filter((c) => c.id !== id);
+    setStored(STORAGE_KEYS.CUSTOMERS, list);
+    deleteFromSupabase('customers', id);
+    return true;
+  },
+
   getInvoices(): Invoice[] {
     return getStored<Invoice[]>(STORAGE_KEYS.INVOICES, defaultInvoices);
   },
@@ -261,6 +281,13 @@ export const StorageService = {
     return invoice;
   },
 
+  deleteInvoice(id: string): boolean {
+    const list = this.getInvoices().filter((i) => i.id !== id);
+    setStored(STORAGE_KEYS.INVOICES, list);
+    deleteFromSupabase('invoices', id);
+    return true;
+  },
+
   getAdvances(): AdvanceDeposit[] {
     return getStored<AdvanceDeposit[]>(STORAGE_KEYS.ADVANCES, defaultAdvances);
   },
@@ -296,6 +323,13 @@ export const StorageService = {
     return advance;
   },
 
+  deleteAdvance(id: string): boolean {
+    const list = this.getAdvances().filter((a) => a.id !== id);
+    setStored(STORAGE_KEYS.ADVANCES, list);
+    deleteFromSupabase('advance_deposits', id);
+    return true;
+  },
+
   getInstallmentPlans(): InstallmentPlan[] {
     return getStored<InstallmentPlan[]>(STORAGE_KEYS.INSTALLMENTS, defaultInstallmentPlans);
   },
@@ -316,6 +350,13 @@ export const StorageService = {
       data: plan,
     });
     return plan;
+  },
+
+  deleteInstallmentPlan(id: string): boolean {
+    const list = this.getInstallmentPlans().filter((p) => p.id !== id);
+    setStored(STORAGE_KEYS.INSTALLMENTS, list);
+    deleteFromSupabase('installment_plans', id);
+    return true;
   },
 
   recordInstallmentPayment(planId: string, payment: InstallmentPayment): InstallmentPlan | null {
@@ -359,6 +400,13 @@ export const StorageService = {
     return plan;
   },
 
+  deleteInstallmentPlan(id: string): boolean {
+    const list = this.getInstallmentPlans().filter((p) => p.id !== id);
+    setStored(STORAGE_KEYS.INSTALLMENTS, list);
+    deleteFromSupabase('installment_plans', id);
+    return true;
+  },
+
   getOrders(): JewelleryOrder[] {
     return getStored<JewelleryOrder[]>(STORAGE_KEYS.ORDERS, defaultOrders);
   },
@@ -379,6 +427,13 @@ export const StorageService = {
       data: order,
     });
     return order;
+  },
+
+  deleteOrder(id: string): boolean {
+    const list = this.getOrders().filter((o) => o.id !== id);
+    setStored(STORAGE_KEYS.ORDERS, list);
+    deleteFromSupabase('jewellery_orders', id);
+    return true;
   },
 
   updateOrderStatus(orderId: string, status: OrderStatus, notes?: string): JewelleryOrder | null {

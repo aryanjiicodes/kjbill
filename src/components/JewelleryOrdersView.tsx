@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { JewelleryOrder, Customer, OrderStatus, ShopSettings, MetalRates, MetalType } from '../types';
 import { formatINR, formatGrams } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
-import { Gem, Plus, Search, Printer, X, Image as ImageIcon, BookOpen, Clock, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Gem, Plus, Search, Printer, X, Image as ImageIcon, BookOpen, Clock, CheckCircle2, ArrowRight, Trash2 } from 'lucide-react';
 
 interface Props {
   orders: JewelleryOrder[];
@@ -182,7 +182,7 @@ export const JewelleryOrdersView: React.FC<Props> = ({
         {filteredOrders.map((ord) => (
           <div
             key={ord.id}
-            className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:border-amber-400/80 transition-all flex flex-col justify-between"
+            className="group bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:border-amber-400/80 transition-all flex flex-col justify-between"
           >
             <div>
               {/* Image banner if photo design exists */}
@@ -208,17 +208,33 @@ export const JewelleryOrdersView: React.FC<Props> = ({
                     <h3 className="font-bold text-stone-900 text-sm mt-0.5">{ord.customerName}</h3>
                     <div className="text-[11px] text-stone-500 font-mono">{ord.customerMobile}</div>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-1 rounded-full ${
-                      ord.status === 'Ready for Delivery'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : ord.status === 'Delivered'
-                        ? 'bg-stone-200 text-stone-700'
-                        : 'bg-amber-100 text-amber-900'
-                    }`}
-                  >
-                    {ord.status}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                        ord.status === 'Ready for Delivery'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : ord.status === 'Delivered'
+                          ? 'bg-stone-200 text-stone-700'
+                          : 'bg-amber-100 text-amber-900'
+                      }`}
+                    >
+                      {ord.status}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Are you sure you want to delete custom order ${ord.orderNumber} for ${ord.customerName}?`)) {
+                          StorageService.deleteOrder(ord.id);
+                          onRefresh();
+                        }
+                      }}
+                      className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                      title="Delete this order"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Details */}

@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { InstallmentPlan, InstallmentPayment, Customer, ShopSettings, PaymentMode } from '../types';
 import { formatINR, numberToIndianWords } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
-import { Receipt, Plus, Search, Printer, X, CheckCircle2, Calendar, User, Clock } from 'lucide-react';
+import { Receipt, Plus, Search, Printer, X, CheckCircle2, Calendar, User, Clock, Trash2 } from 'lucide-react';
+
+import mainLogoImg from '../assets/images/kamakhya_main_logo.png';
+import bisLogoImg from '../assets/images/bis_hallmark_logo.png';
+import watermarkImg from '../assets/images/watermark.png';
+import signatureImg from '../assets/images/authorized_signature.png';
 
 interface Props {
   installments: InstallmentPlan[];
@@ -171,7 +176,7 @@ export const InstallmentsView: React.FC<Props> = ({
             return (
               <div
                 key={plan.id}
-                className="bg-white rounded-2xl border border-stone-200 p-5 shadow-xs flex flex-col justify-between hover:border-amber-400/60 transition-colors"
+                className="group bg-white rounded-2xl border border-stone-200 p-5 shadow-xs flex flex-col justify-between hover:border-amber-400/60 transition-colors"
               >
                 <div>
                   <div className="flex items-center justify-between border-b border-stone-100 pb-3 mb-3">
@@ -182,15 +187,31 @@ export const InstallmentsView: React.FC<Props> = ({
                       <h3 className="font-bold text-stone-900 text-base">{plan.customerName}</h3>
                       <div className="text-xs text-stone-500 font-mono">{plan.customerMobile}</div>
                     </div>
-                    <span
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                        plan.status === 'Completed'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-900'
-                      }`}
-                    >
-                      {plan.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                          plan.status === 'Completed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-900'
+                        }`}
+                      >
+                        {plan.status}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Are you sure you want to delete installment scheme ${plan.planNumber} for ${plan.customerName}?`)) {
+                            StorageService.deleteInstallmentPlan(plan.id);
+                            onRefresh();
+                          }
+                        }}
+                        className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete this installment plan"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="text-xs font-semibold text-stone-700 mb-2">
@@ -492,99 +513,207 @@ export const InstallmentsView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Printable Installment Slip Modal */}
+      {/* Printable Installment Slip Modal (A4 Sheet matching Bill styling) */}
       {selectedSlipForPrint && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-          <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white p-2 rounded-xl shadow-xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:bg-white print:fixed print:inset-0 print:overflow-visible">
+          <style>{`
+            @media print {
+              html, body {
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                scrollbar-width: none !important;
+              }
+              ::-webkit-scrollbar {
+                display: none !important;
+              }
+            }
+          `}</style>
+
+          <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white/95 backdrop-blur-md p-2 rounded-xl shadow-xl border border-stone-200">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-4 py-2 bg-stone-900 text-white font-bold text-xs rounded-lg"
+              className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
             >
               <Printer className="w-4 h-4" />
-              <span>Print A4 Slip</span>
+              <span>Print A4 Receipt</span>
             </button>
             <button
               onClick={() => setSelectedSlipForPrint(null)}
-              className="p-1.5 text-stone-400 hover:text-stone-800"
+              className="p-1.5 text-stone-400 hover:text-stone-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="w-full max-w-[148mm] min-h-[105mm] bg-white text-stone-900 p-8 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-6 mx-auto text-xs">
-            <div className="border-b-2 border-stone-800 pb-2 mb-3 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-stone-600">
-                Monthly Installment Payment Slip
-              </div>
-              <h2 className="text-xl font-serif font-bold text-stone-900 mt-0.5">
-                {settings.businessName}
-              </h2>
-              <p className="text-[11px] text-stone-600">{settings.address} · Contact: {settings.mobile}</p>
+          <div
+            className="w-full max-w-[210mm] min-h-[296mm] bg-white text-stone-900 p-6 sm:p-7 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-4 mx-auto relative overflow-hidden text-[11px] leading-tight flex flex-col justify-between"
+            style={{
+              boxSizing: 'border-box',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+            }}
+          >
+            {/* Background Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+              <img
+                src={watermarkImg}
+                alt="Watermark"
+                className="w-[400px] max-w-[75%] opacity-[0.16] select-none object-contain print:opacity-[0.16]"
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 border border-stone-300 p-2.5 rounded-xs mb-3 text-[11px]">
+            <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
               <div>
-                <span className="font-semibold text-stone-600">Receipt No: </span>
-                <span className="font-mono font-bold">{selectedSlipForPrint.payment.receiptNumber}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-stone-600">Date: </span>
-                <span>{selectedSlipForPrint.payment.date} {selectedSlipForPrint.payment.time}</span>
-              </div>
-              <div>
-                <span className="font-semibold text-stone-600">Customer: </span>
-                <span className="font-bold">{selectedSlipForPrint.plan.customerName}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-stone-600">Plan No: </span>
-                <span className="font-mono font-bold">{selectedSlipForPrint.plan.planNumber}</span>
-              </div>
-            </div>
+                {/* Header */}
+                <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="w-[190px] shrink-0 flex items-center">
+                      <img
+                        src={mainLogoImg}
+                        alt={settings.businessName}
+                        className="max-h-[64px] w-auto object-contain"
+                      />
+                    </div>
 
-            <div className="border border-stone-300 p-3 rounded-xs mb-3 space-y-1.5 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-stone-600">Amount Received Today:</span>
-                <span className="font-mono font-bold text-stone-900 text-sm">
-                  {formatINR(selectedSlipForPrint.payment.amount)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-stone-600">
-                <span>Payment Mode:</span>
-                <span className="font-medium text-stone-800">{selectedSlipForPrint.payment.paymentMode}</span>
-              </div>
-              <div className="flex justify-between items-center text-stone-600 border-t border-stone-200 pt-1">
-                <span>Total Amount Paid to Date:</span>
-                <span className="font-mono font-bold text-emerald-800">
-                  {formatINR(selectedSlipForPrint.plan.totalPaid)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-stone-600">
-                <span>Total Scheme Target:</span>
-                <span className="font-mono font-semibold">{formatINR(selectedSlipForPrint.plan.totalAgreedAmount)}</span>
-              </div>
-              <div className="flex justify-between items-center text-rose-700 font-bold border-t border-dashed border-stone-300 pt-1">
-                <span>Remaining Plan Balance:</span>
-                <span className="font-mono">{formatINR(selectedSlipForPrint.plan.remainingAmount)}</span>
-              </div>
-              <div className="flex justify-between items-center text-amber-900 font-semibold pt-1">
-                <span>Next Due Date:</span>
-                <span className="font-mono">{selectedSlipForPrint.plan.nextDueDate}</span>
-              </div>
-            </div>
+                    <div className="text-center flex-1 px-2">
+                      <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mb-0.5">
+                        ★ SWARNA BACHAT SAVINGS SCHEME RECEIPT ★
+                      </div>
+                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 leading-tight">
+                        {settings.businessName}
+                      </h1>
+                      <p className="text-[11px] text-stone-600 mt-0.5 max-w-md mx-auto leading-tight">
+                        {settings.address}
+                      </p>
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
+                        <span>Ph: +91 {settings.mobile}</span>
+                        {settings.email && <span>· {settings.email}</span>}
+                      </div>
+                      <div className="text-[11px] font-bold text-stone-900 mt-0.5">
+                        GSTIN: {settings.gstin || '07AAACK1234F1Z8'}
+                      </div>
+                    </div>
 
-            <div className="border border-stone-300 p-2 rounded-xs mb-4 text-[10px] bg-stone-50 italic">
-              Words: {numberToIndianWords(selectedSlipForPrint.payment.amount)}
-            </div>
+                    <div className="w-[100px] shrink-0 flex flex-col items-center justify-center text-center">
+                      <img
+                        src={bisLogoImg}
+                        alt="BIS Hallmark"
+                        className="max-h-[60px] w-auto object-contain"
+                      />
+                      <span className="text-[8px] font-bold text-blue-900 tracking-wider mt-0.5 uppercase">
+                        BIS 916 Hallmark
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="flex justify-between items-end pt-4">
-              <div className="text-center">
-                <div className="w-28 border-b border-stone-400 mb-1"></div>
-                <span className="text-[9px] text-stone-500">Customer Signature</span>
+                {/* Receipt Meta */}
+                <div className="grid grid-cols-2 gap-3 border border-stone-300 p-2.5 rounded-xs mb-3 text-xs bg-white/50 print:bg-transparent">
+                  <div>
+                    <span className="font-semibold text-stone-600">Receipt No: </span>
+                    <span className="font-mono font-bold text-stone-900">{selectedSlipForPrint.payment.receiptNumber}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Date & Time: </span>
+                    <span className="font-medium">{selectedSlipForPrint.payment.date} {selectedSlipForPrint.payment.time}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-stone-600">Customer: </span>
+                    <span className="font-bold text-stone-900">{selectedSlipForPrint.plan.customerName}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Plan No: </span>
+                    <span className="font-mono font-bold text-amber-900">{selectedSlipForPrint.plan.planNumber}</span>
+                  </div>
+                </div>
+
+                {/* Scheme & Payment Table */}
+                <div className="border border-stone-300 rounded-xs overflow-hidden mb-3 text-xs bg-white/50 print:bg-transparent">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-stone-100/70 text-stone-700 font-bold border-b border-stone-300 text-[11px]">
+                      <tr>
+                        <th className="py-2 px-3">Scheme Name</th>
+                        <th className="py-2 px-3 text-center">Mode</th>
+                        <th className="py-2 px-3 text-right">Agreed Target</th>
+                        <th className="py-2 px-3 text-right">Total Paid So Far</th>
+                        <th className="py-2 px-3 text-right font-bold text-stone-900">Installment Paid Now</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="py-3 px-3 font-medium">
+                          {selectedSlipForPrint.plan.schemeName}
+                        </td>
+                        <td className="py-3 px-3 text-center font-semibold">{selectedSlipForPrint.payment.paymentMode}</td>
+                        <td className="py-3 px-3 text-right font-mono font-semibold">
+                          {formatINR(selectedSlipForPrint.plan.totalAgreedAmount)}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-800">
+                          {formatINR(selectedSlipForPrint.plan.totalPaid)}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-stone-950 text-sm">
+                          {formatINR(selectedSlipForPrint.payment.amount)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Balance & Next Due Status Strip */}
+                <div className="grid grid-cols-2 gap-3 border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-amber-50/40 print:bg-transparent">
+                  <div>
+                    <span className="font-semibold text-stone-600">Remaining Balance on Plan: </span>
+                    <span className="font-mono font-bold text-rose-700 text-sm">
+                      {formatINR(selectedSlipForPrint.plan.remainingAmount)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Next Due Date: </span>
+                    <span className="font-mono font-bold text-amber-950">
+                      {selectedSlipForPrint.plan.nextDueDate}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Amount in words */}
+                <div className="border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-stone-50/60 print:bg-transparent">
+                  <span className="font-semibold text-stone-600">Amount Received in Words: </span>
+                  <span className="font-bold text-stone-900 italic">
+                    {numberToIndianWords(selectedSlipForPrint.payment.amount)}
+                  </span>
+                </div>
+
+                {/* Terms */}
+                <div className="text-[10px] text-stone-600 space-y-1 border-t border-stone-200 pt-3">
+                  <p>
+                    <strong>Scheme Acknowledgement:</strong> This is a monthly installment deposit receipt for the Swarna Bachat monthly savings plan with Kamakhya Jewellers. Installments deposited are redeemable towards purchases of certified BIS 916 hallmarked jewellery ornaments upon maturity.
+                  </p>
+                  <p>
+                    Please preserve all monthly deposit slips for smooth redemption upon maturity. Subject to showroom terms & local jurisdiction.
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="text-[11px] font-bold text-stone-800 mb-0.5">{settings.ownerName}</div>
-                <div className="w-36 border-t border-stone-400 pt-1 text-[10px] font-bold text-stone-800">
-                  For {settings.businessName}
+
+              {/* Signatures Area matching main bill */}
+              <div className="grid grid-cols-12 gap-3 pt-4 border-t border-stone-300">
+                <div className="col-span-6 flex flex-col justify-end">
+                  <div className="w-44 border-b border-stone-400 mb-1"></div>
+                  <span className="text-[10px] text-stone-500 font-medium">Customer Signature / Acknowledged</span>
+                </div>
+
+                <div className="col-span-6 text-center flex flex-col justify-end items-center">
+                  <div className="h-14 flex items-end justify-center mb-0.5">
+                    <img
+                      src={signatureImg}
+                      alt="Authorised Signatory"
+                      className="max-h-14 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="w-48 border-t border-stone-400 pt-0.5 text-[11px] font-bold text-stone-800">
+                    For {settings.businessName}
+                  </div>
+                  <div className="text-[9.5px] text-stone-500">Authorised Signatory</div>
                 </div>
               </div>
             </div>

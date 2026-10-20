@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Invoice, ShopSettings } from '../types';
 import { formatINR, formatGrams } from '../utils/numberToWords';
-import { Search, Printer, FileText, ArrowUpDown, Filter, Download, MessageCircle } from 'lucide-react';
+import { Search, Printer, FileText, ArrowUpDown, Filter, Download, MessageCircle, Trash2 } from 'lucide-react';
 import { openWhatsAppInvoice } from '../utils/whatsapp';
+import { StorageService } from '../services/storage';
 
 interface Props {
   invoices: Invoice[];
   onSelectInvoice: (invoice: Invoice) => void;
   onCreateNew: () => void;
   settings: ShopSettings;
+  onRefresh: () => void;
 }
 
-export const InvoicesList: React.FC<Props> = ({ invoices, onSelectInvoice, onCreateNew, settings }) => {
+export const InvoicesList: React.FC<Props> = ({ invoices, onSelectInvoice, onCreateNew, settings, onRefresh }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Paid' | 'Partially Paid' | 'Unpaid'>('All');
   const [dateFrom, setDateFrom] = useState('');
@@ -142,7 +144,7 @@ export const InvoicesList: React.FC<Props> = ({ invoices, onSelectInvoice, onCre
             <tbody className="divide-y divide-stone-100">
               {filtered.length > 0 ? (
                 filtered.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-amber-50/30 transition-colors">
+                  <tr key={inv.id} className="group hover:bg-amber-50/30 transition-colors">
                     <td className="py-3 px-3 font-mono font-bold text-stone-900">
                       {inv.invoiceNumber}
                     </td>
@@ -202,6 +204,19 @@ export const InvoicesList: React.FC<Props> = ({ invoices, onSelectInvoice, onCre
                         >
                           <Printer className="w-3.5 h-3.5" />
                           <span>Print A4</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Are you sure you want to delete invoice ${inv.invoiceNumber} for ${inv.customerName}? This will permanently remove it from your records.`)) {
+                              StorageService.deleteInvoice(inv.id);
+                              onRefresh();
+                            }
+                          }}
+                          className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all opacity-0 group-hover:opacity-100 ml-1"
+                          title="Delete this invoice"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

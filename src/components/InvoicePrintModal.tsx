@@ -34,6 +34,7 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
         className="w-full max-w-[210mm] min-h-[296mm] bg-white text-stone-900 mx-auto p-6 sm:p-7 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-3 print:w-full print:max-w-none text-[11px] leading-tight relative overflow-hidden"
         style={{
           boxSizing: 'border-box',
+          overflow: 'hidden',
           WebkitPrintColorAdjust: 'exact',
           printColorAdjust: 'exact',
         }}
@@ -506,6 +507,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
       backgroundColor: '#ffffff',
       scrollX: 0,
       scrollY: 0,
+      windowWidth: 1200,
     });
 
     const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
@@ -522,6 +524,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
         backgroundColor: '#ffffff',
         scrollX: 0,
         scrollY: 0,
+        windowWidth: 1200,
       });
       const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
       pdf.addImage(imgData2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
@@ -620,10 +623,23 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
   const totalOtherCharges = invoice.items.reduce((s, i) => s + (i.otherCharges || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-xs flex flex-col items-center p-2 sm:p-4 print:p-0 print:bg-white print:fixed print:inset-0">
-      {/* Print CSS Styles for clean 2-page A4 output */}
+    <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex flex-col items-center p-2 sm:p-4 print:p-0 print:bg-white print:fixed print:inset-0 print:overflow-visible">
+      {/* Print CSS Styles for clean 2-page A4 output without scrollbars */}
       <style>{`
         @media print {
+          html, body {
+            overflow: visible !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+          ::-webkit-scrollbar {
+            display: none !important;
+            width: 0px !important;
+            height: 0px !important;
+          }
           @page {
             size: A4 portrait;
             margin: 6mm 6mm;
@@ -636,6 +652,14 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
             page-break-before: always !important;
             break-before: page !important;
           }
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none !important;
+          width: 0px !important;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none !important;
+          scrollbar-width: none !important;
         }
       `}</style>
 

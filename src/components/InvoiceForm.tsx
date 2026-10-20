@@ -1774,6 +1774,32 @@ export const InvoiceForm: React.FC<Props> = ({
                   onChange={(e) => setNewCustName(e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none"
                 />
+                {(() => {
+                  const match = newCustName.trim().length >= 2
+                    ? customers.find((c) => c.name.trim().toLowerCase() === newCustName.trim().toLowerCase())
+                    : null;
+                  if (!match) return null;
+                  return (
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg p-2.5 text-xs text-amber-900 mt-1.5 flex items-start justify-between gap-2 shadow-xs">
+                      <div>
+                        <span className="font-bold">⚠️ Customer already exists:</span>
+                        <div className="text-[11px] text-stone-700 mt-0.5">
+                          "{match.name}" ({match.id}, Ph: {match.mobile})
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSelectCustomer(match);
+                          setShowAddCustomerModal(false);
+                        }}
+                        className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] rounded shrink-0 shadow-xs"
+                      >
+                        Select Customer
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div>

@@ -172,6 +172,7 @@ export default function App() {
             onSelectInvoice={(inv) => setPrintInvoice(inv)}
             onCreateNew={() => setActiveTab('billing')}
             settings={settings}
+            onRefresh={refreshAllData}
           />
         )}
 

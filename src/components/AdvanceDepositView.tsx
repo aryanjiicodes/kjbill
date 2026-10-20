@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { AdvanceDeposit, Customer, MetalRates, ShopSettings, PaymentMode } from '../types';
 import { formatINR, formatGrams, numberToIndianWords } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
-import { Coins, Plus, Search, Printer, X, ShieldCheck, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Coins, Plus, Search, Printer, X, ShieldCheck, FileText, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+
+import mainLogoImg from '../assets/images/kamakhya_main_logo.png';
+import bisLogoImg from '../assets/images/bis_hallmark_logo.png';
+import watermarkImg from '../assets/images/watermark.png';
+import signatureImg from '../assets/images/authorized_signature.png';
 
 interface Props {
   advances: AdvanceDeposit[];
@@ -229,7 +234,7 @@ export const AdvanceDepositView: React.FC<Props> = ({
             </thead>
             <tbody className="divide-y divide-stone-100">
               {filteredAdvances.map((adv) => (
-                <tr key={adv.id} className="hover:bg-amber-50/30 transition-colors">
+                <tr key={adv.id} className="group hover:bg-amber-50/30 transition-colors">
                   <td className="py-3 px-3 font-mono font-bold text-stone-900">
                     {adv.receiptNumber}
                   </td>
@@ -273,12 +278,29 @@ export const AdvanceDepositView: React.FC<Props> = ({
                     </span>
                   </td>
                   <td className="py-3 px-3 text-right">
-                    <button
-                      onClick={() => setSelectedReceiptForPrint(adv)}
-                      className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors"
-                    >
-                      Print Slip
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setSelectedReceiptForPrint(adv)}
+                        className="px-2.5 py-1 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md transition-colors flex items-center gap-1"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print Slip</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Are you sure you want to delete advance receipt ${adv.receiptNumber} for ${adv.customerName}?`)) {
+                            StorageService.deleteAdvance(adv.id);
+                            onRefresh();
+                          }
+                        }}
+                        className="p-1 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete this advance receipt"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -516,39 +538,35 @@ export const AdvanceDepositView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Advance Receipt Print Modal (A4 & Compact Card Layouts) */}
+      {/* Advance Receipt Print Modal (Styled matching the main Tax Bill) */}
       {selectedReceiptForPrint && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:bg-white print:fixed print:inset-0">
+        <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:bg-white print:fixed print:inset-0 print:overflow-visible">
+          <style>{`
+            @media print {
+              html, body {
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                scrollbar-width: none !important;
+              }
+              ::-webkit-scrollbar {
+                display: none !important;
+              }
+            }
+          `}</style>
+
           {/* Top print control bar */}
-          <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white p-2 rounded-xl shadow-xl border border-stone-200">
-            <div className="flex bg-stone-100 p-0.5 rounded-lg text-xs font-semibold mr-2">
-              <button
-                onClick={() => setPrintLayout('A4')}
-                className={`px-3 py-1 rounded-md ${
-                  printLayout === 'A4' ? 'bg-amber-600 text-white' : 'text-stone-600'
-                }`}
-              >
-                A4 Sheet
-              </button>
-              <button
-                onClick={() => setPrintLayout('Card')}
-                className={`px-3 py-1 rounded-md ${
-                  printLayout === 'Card' ? 'bg-amber-600 text-white' : 'text-stone-600'
-                }`}
-              >
-                Compact Card
-              </button>
-            </div>
+          <div className="fixed top-4 right-4 z-50 flex items-center gap-2 print:hidden bg-white/95 backdrop-blur-md p-2 rounded-xl shadow-xl border border-stone-200">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-lg"
+              className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm"
             >
               <Printer className="w-4 h-4" />
-              <span>Print</span>
+              <span>Print A4 Receipt</span>
             </button>
             <button
               onClick={() => setSelectedReceiptForPrint(null)}
-              className="p-1.5 text-stone-400 hover:text-stone-800"
+              className="p-1.5 text-stone-400 hover:text-stone-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -556,116 +574,171 @@ export const AdvanceDepositView: React.FC<Props> = ({
 
           {/* Printable Sheet */}
           <div
-            className={`bg-white text-stone-900 p-8 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-6 mx-auto ${
-              printLayout === 'A4' ? 'w-full max-w-[210mm] min-h-[200mm]' : 'w-full max-w-[148mm] min-h-[105mm]'
-            }`}
+            className="w-full max-w-[210mm] min-h-[296mm] bg-white text-stone-900 p-6 sm:p-7 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-4 mx-auto relative overflow-hidden text-[11px] leading-tight flex flex-col justify-between"
+            style={{
+              boxSizing: 'border-box',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact',
+            }}
           >
-            {/* Header */}
-            <div className="border-b-2 border-stone-800 pb-3 mb-4 text-center">
-              <div className="text-[10px] font-bold uppercase tracking-widest text-stone-600">
-                Payment Acknowledgement Receipt (Customer Advance Deposit)
-              </div>
-              <h1 className="text-2xl font-serif font-bold text-stone-900 mt-1">
-                {settings.businessName}
-              </h1>
-              <p className="text-xs text-stone-600">{settings.address}</p>
-              <p className="text-xs text-stone-600">Contact: +91 {settings.mobile} · GSTIN: {settings.gstin}</p>
+            {/* Background Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+              <img
+                src={watermarkImg}
+                alt="Watermark"
+                className="w-[400px] max-w-[75%] opacity-[0.16] select-none object-contain print:opacity-[0.16]"
+              />
             </div>
 
-            {/* Receipt Meta */}
-            <div className="grid grid-cols-2 gap-4 border border-stone-300 p-3 rounded-xs mb-4 text-xs">
+            {/* Content Wrapper */}
+            <div className="relative z-10 flex flex-col justify-between h-full space-y-4">
               <div>
-                <span className="font-semibold text-stone-600">Receipt No: </span>
-                <span className="font-mono font-bold text-stone-900">{selectedReceiptForPrint.receiptNumber}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-stone-600">Date & Time: </span>
-                <span className="font-medium">{selectedReceiptForPrint.depositDate} at {selectedReceiptForPrint.depositTime}</span>
-              </div>
-              <div>
-                <span className="font-semibold text-stone-600">Customer: </span>
-                <span className="font-bold text-stone-900">{selectedReceiptForPrint.customerName}</span>
-              </div>
-              <div className="text-right">
-                <span className="font-semibold text-stone-600">Contact: </span>
-                <span className="font-mono">{selectedReceiptForPrint.customerMobile}</span>
-              </div>
-            </div>
+                {/* Header */}
+                <div className="border-b-2 border-stone-800 pb-2.5 mb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Left: Main Brand Logo */}
+                    <div className="w-[190px] shrink-0 flex items-center">
+                      <img
+                        src={mainLogoImg}
+                        alt={settings.businessName}
+                        className="max-h-[64px] w-auto object-contain"
+                      />
+                    </div>
 
-            {/* Financial Details Table */}
-            <div className="border border-stone-300 rounded-xs overflow-hidden mb-4 text-xs">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-stone-100 text-stone-700 font-bold border-b border-stone-300 text-[11px]">
-                  <tr>
-                    <th className="py-2 px-3">Description</th>
-                    <th className="py-2 px-3">Payment Mode</th>
-                    <th className="py-2 px-3 text-right">Metal Rate Stamped</th>
-                    <th className="py-2 px-3 text-right">Equivalent Metal</th>
-                    <th className="py-2 px-3 text-right">Amount Received</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-3 px-3 font-medium">
-                      {selectedReceiptForPrint.metalCategory} Advance Booking
-                      {selectedReceiptForPrint.purpose && (
-                        <span className="block text-[11px] text-stone-500 italic">
-                          ({selectedReceiptForPrint.purpose})
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 font-semibold">{selectedReceiptForPrint.paymentMode}</td>
-                    <td className="py-3 px-3 text-right font-mono">
-                      {selectedReceiptForPrint.metalRateAtDeposit > 0
-                        ? `₹${selectedReceiptForPrint.metalRateAtDeposit}/g (${selectedReceiptForPrint.purity})`
-                        : '—'}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold text-amber-950">
-                      {selectedReceiptForPrint.equivalentGrams
-                        ? `${selectedReceiptForPrint.equivalentGrams.toFixed(3)} g`
-                        : '—'}
-                    </td>
-                    <td className="py-3 px-3 text-right font-mono font-bold text-stone-950 text-sm">
-                      {formatINR(selectedReceiptForPrint.amount)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                    {/* Center: Shop Details & GSTIN */}
+                    <div className="text-center flex-1 px-2">
+                      <div className="text-[10px] font-bold tracking-widest text-amber-800 uppercase mb-0.5">
+                        ★ CUSTOMER ADVANCE DEPOSIT ACKNOWLEDGEMENT ★
+                      </div>
+                      <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-wide text-stone-900 leading-tight">
+                        {settings.businessName}
+                      </h1>
+                      <p className="text-[11px] text-stone-600 mt-0.5 max-w-md mx-auto leading-tight">
+                        {settings.address}
+                      </p>
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
+                        <span>Ph: +91 {settings.mobile}</span>
+                        {settings.email && <span>· {settings.email}</span>}
+                      </div>
+                      <div className="text-[11px] font-bold text-stone-900 mt-0.5">
+                        GSTIN: {settings.gstin || '07AAACK1234F1Z8'}
+                      </div>
+                    </div>
 
-            {/* Amount In Words */}
-            <div className="border border-stone-300 rounded-xs p-2.5 mb-4 text-xs bg-stone-50/50">
-              <span className="font-semibold text-stone-600">Amount in Words: </span>
-              <span className="font-bold text-stone-900 italic">
-                {numberToIndianWords(selectedReceiptForPrint.amount)}
-              </span>
-            </div>
-
-            {/* Scheme & Acknowledgement Notice */}
-            <div className="text-[10px] text-stone-500 space-y-1 border-t border-stone-200 pt-3 mb-6">
-              <p>
-                <strong>Legal Acknowledgement:</strong> This document is a payment receipt acknowledgement for advance money deposited towards future jewellery purchase and does not constitute a GST Tax Invoice. A final Tax Invoice will be issued upon delivery of goods.
-              </p>
-              <p>
-                The stamped metal rate represents the agreed benchmark at the time of booking as per Kamakhya Jewellers advance scheme terms.
-              </p>
-            </div>
-
-            {/* Signature Area */}
-            <div className="flex justify-between items-end pt-4">
-              <div className="text-center">
-                <div className="w-36 border-b border-stone-400 mb-1"></div>
-                <span className="text-[10px] text-stone-500 font-medium">Customer Signature</span>
-              </div>
-
-              <div className="text-center">
-                <div className="font-serif italic text-base text-stone-800 mb-1">
-                  {settings.ownerName}
+                    {/* Right: BIS Hallmark Logo */}
+                    <div className="w-[100px] shrink-0 flex flex-col items-center justify-center text-center">
+                      <img
+                        src={bisLogoImg}
+                        alt="BIS Hallmark"
+                        className="max-h-[60px] w-auto object-contain"
+                      />
+                      <span className="text-[8px] font-bold text-blue-900 tracking-wider mt-0.5 uppercase">
+                        BIS 916 Hallmark
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-44 border-t border-stone-400 pt-1 text-[11px] font-bold text-stone-800">
-                  For {settings.businessName}
+
+                {/* Receipt Meta */}
+                <div className="grid grid-cols-2 gap-3 border border-stone-300 p-2.5 rounded-xs mb-3 text-xs bg-white/50 print:bg-transparent">
+                  <div>
+                    <span className="font-semibold text-stone-600">Receipt No: </span>
+                    <span className="font-mono font-bold text-stone-900">{selectedReceiptForPrint.receiptNumber}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Date & Time: </span>
+                    <span className="font-medium">{selectedReceiptForPrint.depositDate} at {selectedReceiptForPrint.depositTime}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-stone-600">Customer: </span>
+                    <span className="font-bold text-stone-900">{selectedReceiptForPrint.customerName}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-semibold text-stone-600">Contact: </span>
+                    <span className="font-mono font-bold">{selectedReceiptForPrint.customerMobile}</span>
+                  </div>
                 </div>
-                <div className="text-[10px] text-stone-500">Authorised Signatory</div>
+
+                {/* Financial Details Table */}
+                <div className="border border-stone-300 rounded-xs overflow-hidden mb-3 text-xs bg-white/50 print:bg-transparent">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-stone-100/70 text-stone-700 font-bold border-b border-stone-300 text-[11px]">
+                      <tr>
+                        <th className="py-2 px-3">Description</th>
+                        <th className="py-2 px-3">Payment Mode</th>
+                        <th className="py-2 px-3 text-right">Metal Rate Stamped</th>
+                        <th className="py-2 px-3 text-right">Equivalent Metal Wt</th>
+                        <th className="py-2 px-3 text-right">Amount Deposited</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="py-3 px-3 font-medium">
+                          {selectedReceiptForPrint.metalCategory} Advance Booking
+                          {selectedReceiptForPrint.purpose && (
+                            <span className="block text-[11px] text-stone-500 italic">
+                              ({selectedReceiptForPrint.purpose})
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 font-semibold">{selectedReceiptForPrint.paymentMode}</td>
+                        <td className="py-3 px-3 text-right font-mono">
+                          {selectedReceiptForPrint.metalRateAtDeposit > 0
+                            ? `₹${selectedReceiptForPrint.metalRateAtDeposit}/g (${selectedReceiptForPrint.purity})`
+                            : '—'}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-amber-950">
+                          {selectedReceiptForPrint.equivalentGrams
+                            ? `${selectedReceiptForPrint.equivalentGrams.toFixed(3)} g`
+                            : '—'}
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono font-bold text-stone-950 text-sm">
+                          {formatINR(selectedReceiptForPrint.amount)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Amount In Words */}
+                <div className="border border-stone-300 rounded-xs p-2.5 mb-3 text-xs bg-stone-50/60 print:bg-transparent">
+                  <span className="font-semibold text-stone-600">Amount in Words: </span>
+                  <span className="font-bold text-stone-900 italic">
+                    {numberToIndianWords(selectedReceiptForPrint.amount)}
+                  </span>
+                </div>
+
+                {/* Scheme & Acknowledgement Notice */}
+                <div className="text-[10px] text-stone-600 space-y-1 border-t border-stone-200 pt-3">
+                  <p>
+                    <strong>Legal Acknowledgement:</strong> This document is a payment receipt acknowledgement for advance money deposited towards future jewellery purchase and does not constitute a final GST Tax Invoice. A final Tax Invoice will be issued upon delivery and final reconciliation of the jewellery ornaments.
+                  </p>
+                  <p>
+                    The stamped metal rate represents the agreed benchmark at the time of booking as per Kamakhya Jewellers advance scheme terms. Subject to showroom jurisdiction only.
+                  </p>
+                </div>
+              </div>
+
+              {/* Signatures Area matching main bill */}
+              <div className="grid grid-cols-12 gap-3 pt-4 border-t border-stone-300">
+                <div className="col-span-6 flex flex-col justify-end">
+                  <div className="w-44 border-b border-stone-400 mb-1"></div>
+                  <span className="text-[10px] text-stone-500 font-medium">Customer Signature / Acknowledged</span>
+                </div>
+
+                <div className="col-span-6 text-center flex flex-col justify-end items-center">
+                  <div className="h-14 flex items-end justify-center mb-0.5">
+                    <img
+                      src={signatureImg}
+                      alt="Authorised Signatory"
+                      className="max-h-14 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="w-48 border-t border-stone-400 pt-0.5 text-[11px] font-bold text-stone-800">
+                    For {settings.businessName}
+                  </div>
+                  <div className="text-[9.5px] text-stone-500">Authorised Signatory</div>
+                </div>
               </div>
             </div>
           </div>

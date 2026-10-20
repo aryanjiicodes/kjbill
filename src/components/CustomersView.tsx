@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Customer, Invoice, AdvanceDeposit, InstallmentPlan } from '../types';
 import { formatINR, formatGrams } from '../utils/numberToWords';
 import { StorageService } from '../services/storage';
-import { Search, UserPlus, Phone, MapPin, Printer, ArrowRight, FileText, AlertCircle, History } from 'lucide-react';
+import { Search, UserPlus, Phone, MapPin, Printer, ArrowRight, FileText, AlertCircle, History, Trash2 } from 'lucide-react';
 
 interface Props {
   customers: Customer[];
@@ -49,15 +49,21 @@ export const CustomersView: React.FC<Props> = ({
   const custAdvances = advances.filter((a) => a.customerId === activeCustomer?.id);
   const custInstallments = installments.filter((ins) => ins.customerId === activeCustomer?.id);
 
-  const checkDuplicateMobile = (mob: string) => {
-    setMobile(mob);
-    if (mob.length >= 10) {
-      const exists = customers.find((c) => c.mobile === mob);
-      if (exists) {
-        setDuplicateWarning(`Customer "${exists.name}" (${exists.id}) already exists with this phone number.`);
-      } else {
-        setDuplicateWarning('');
-      }
+  const checkDuplicates = (newName: string, newMob: string) => {
+    setName(newName);
+    setMobile(newMob);
+
+    const trimmedName = newName.trim().toLowerCase();
+    const nameMatch = trimmedName.length >= 2 ? customers.find((c) => c.name.trim().toLowerCase() === trimmedName) : null;
+    const cleanMob = newMob.trim().replace(/\D/g, '');
+    const mobMatch = cleanMob.length >= 10 ? customers.find((c) => c.mobile.replace(/\D/g, '') === cleanMob) : null;
+
+    if (nameMatch && mobMatch) {
+      setDuplicateWarning(`Customer "${nameMatch.name}" (${nameMatch.id}) already exists with this name and phone number!`);
+    } else if (nameMatch) {
+      setDuplicateWarning(`This customer already exists! A record with name "${nameMatch.name}" (${nameMatch.id}, Mobile: ${nameMatch.mobile}) is already in your showroom database.`);
+    } else if (mobMatch) {
+      setDuplicateWarning(`This phone number is already registered to customer "${mobMatch.name}" (${mobMatch.id}).`);
     } else {
       setDuplicateWarning('');
     }
@@ -148,32 +154,48 @@ export const CustomersView: React.FC<Props> = ({
             {filteredCustomers.map((cust) => {
               const isSelected = activeCustomer?.id === cust.id;
               return (
-                <button
+                <div
                   key={cust.id}
                   onClick={() => setSelectedCustomerId(cust.id)}
-                  className={`w-full p-3.5 text-left transition-colors flex items-center justify-between ${
+                  className={`w-full p-3.5 text-left transition-colors flex items-center justify-between cursor-pointer group ${
                     isSelected ? 'bg-amber-50/70 border-l-4 border-amber-600' : 'hover:bg-stone-50'
                   }`}
                 >
-                  <div>
-                    <div className="font-bold text-stone-900 text-xs">{cust.name}</div>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className="font-bold text-stone-900 text-xs truncate">{cust.name}</div>
                     <div className="text-[11px] text-stone-500 font-mono flex items-center gap-1 mt-0.5">
-                      <Phone className="w-3 h-3 text-stone-400" />
+                      <Phone className="w-3 h-3 text-stone-400 shrink-0" />
                       <span>{cust.mobile}</span>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-xs font-mono font-bold text-stone-800">
-                      {formatINR(cust.totalPurchases)}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="text-right">
+                      <div className="text-xs font-mono font-bold text-stone-800">
+                        {formatINR(cust.totalPurchases)}
+                      </div>
+                      {cust.availableAdvanceBalance > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-700 block">
+                          Adv: {formatINR(cust.availableAdvanceBalance)}
+                        </span>
+                      )}
                     </div>
-                    {cust.availableAdvanceBalance > 0 && (
-                      <span className="text-[10px] font-bold text-emerald-700 block">
-                        Adv: {formatINR(cust.availableAdvanceBalance)}
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Are you sure you want to delete customer "${cust.name}" (${cust.id})?`)) {
+                          StorageService.deleteCustomer(cust.id);
+                          onRefresh();
+                        }
+                      }}
+                      className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                      title="Delete customer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -213,13 +235,28 @@ export const CustomersView: React.FC<Props> = ({
                   </div>
                 </div>
 
-                <button
-                  onClick={handlePrintLedger}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors print:hidden"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print Ledger</span>
-                </button>
+                <div className="flex items-center gap-2 print:hidden">
+                  <button
+                    onClick={handlePrintLedger}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print Ledger</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete customer "${activeCustomer.name}" (${activeCustomer.id})?`)) {
+                        StorageService.deleteCustomer(activeCustomer.id);
+                        onRefresh();
+                      }
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
+                    title="Delete this customer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
 
               {/* Financial Metrics Strip */}
@@ -408,7 +445,7 @@ export const CustomersView: React.FC<Props> = ({
                   required
                   placeholder="e.g. Ramesh Chandra Verma"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => checkDuplicates(e.target.value, mobile)}
                   className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none"
                 />
               </div>
@@ -423,13 +460,13 @@ export const CustomersView: React.FC<Props> = ({
                   maxLength={10}
                   placeholder="e.g. 9818144011"
                   value={mobile}
-                  onChange={(e) => checkDuplicateMobile(e.target.value)}
+                  onChange={(e) => checkDuplicates(name, e.target.value)}
                   className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-300 rounded-lg focus:outline-none font-mono"
                 />
                 {duplicateWarning && (
-                  <div className="flex items-center gap-1.5 text-amber-700 text-[11px] mt-1 bg-amber-50 p-2 rounded-md">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{duplicateWarning}</span>
+                  <div className="flex items-center gap-1.5 text-amber-800 text-[11px] mt-1.5 bg-amber-50 border border-amber-300 p-2.5 rounded-lg shadow-xs">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span className="font-medium">{duplicateWarning}</span>
                   </div>
                 )}
               </div>

@@ -59,7 +59,10 @@ function setStored<T>(key: string, data: T): void {
 async function syncToSupabase(table: string, payload: Record<string, any>) {
   if (!isSupabaseConfigured) return;
   try {
-    await supabase.from(table).upsert(payload);
+    const { error } = await supabase.from(table).upsert(payload);
+    if (error) {
+      console.error(`Supabase sync notice on table ${table}:`, error.message, error.details);
+    }
   } catch (err) {
     console.warn(`Supabase background sync notice for table ${table}:`, err);
   }
@@ -449,6 +452,110 @@ export const StorageService = {
 
   resetAll(): void {
     localStorage.clear();
+  },
+
+  async testConnection(): Promise<{ ok: boolean; message: string; code?: string }> {
+    if (!isSupabaseConfigured) {
+      return { ok: false, message: 'Supabase credentials not configured in environment.' };
+    }
+    try {
+      // Test read
+      const { error: readErr } = await supabase.from('shop_settings').select('id').limit(1);
+      if (readErr) {
+        return { ok: false, message: `Read failed: ${readErr.message}`, code: readErr.code };
+      }
+      // Test write
+      const testObj = { id: 'default', data: this.getSettings() };
+      const { error: writeErr } = await supabase.from('shop_settings').upsert(testObj);
+      if (writeErr) {
+        if (writeErr.code === '42501') {
+          return {
+            ok: false,
+            message: 'Row-Level Security (RLS) is blocking writes. Please run the SQL command in Supabase to disable RLS or allow anon access.',
+            code: '42501'
+          };
+        }
+        return { ok: false, message: `Write failed: ${writeErr.message}`, code: writeErr.code };
+      }
+      return { ok: true, message: 'Connected to Supabase! Read and write verified successfully.' };
+    } catch (e: any) {
+      return { ok: false, message: e.message || 'Connection test failed.' };
+    }
+  },
+
+  async syncAllToCloud(): Promise<{ success: boolean; message: string }> {
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'Supabase not configured' };
+    }
+    try {
+      const settings = this.getSettings();
+      const rates = this.getRates();
+      const customers = this.getCustomers();
+      const invoices = this.getInvoices();
+      const advances = this.getAdvances();
+      const orders = this.getOrders();
+      const inventory = this.getInventory();
+
+      const { error: sErr } = await supabase.from('shop_settings').upsert({ id: 'default', data: settings });
+      if (sErr) throw sErr;
+
+      await supabase.from('metal_rates').upsert({ id: 'current', data: rates });
+
+      if (customers.length > 0) {
+        await supabase.from('customers').upsert(customers);
+      }
+      if (invoices.length > 0) {
+        await supabase.from('invoices').upsert(
+          invoices.map((inv) => ({
+            id: inv.id,
+            invoice_number: inv.invoiceNumber,
+            date: inv.date,
+            time: inv.time,
+            customer_id: inv.customerId,
+            customer_name: inv.customerName,
+            customer_mobile: inv.customerMobile,
+            data: inv,
+          }))
+        );
+      }
+      if (advances.length > 0) {
+        await supabase.from('advance_deposits').upsert(
+          advances.map((adv) => ({
+            id: adv.id,
+            receipt_number: adv.receiptNumber,
+            customer_id: adv.customerId,
+            customer_name: adv.customerName,
+            customer_mobile: adv.customerMobile,
+            amount: adv.amount,
+            available_balance: adv.availableBalance,
+            data: adv,
+          }))
+        );
+      }
+      if (orders.length > 0) {
+        await supabase.from('jewellery_orders').upsert(
+          orders.map((ord) => ({
+            id: ord.id,
+            order_number: ord.orderNumber,
+            customer_id: ord.customerId,
+            data: ord,
+          }))
+        );
+      }
+      if (inventory.length > 0) {
+        await supabase.from('inventory_items').upsert(
+          inventory.map((item) => ({
+            id: item.id,
+            tag_number: item.tagNumber,
+            data: item,
+          }))
+        );
+      }
+
+      return { success: true, message: 'All local data successfully synced to Supabase Cloud!' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Sync failed.' };
+    }
   },
 
   exportBackup(): string {

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShopSettings, UserRole } from '../types';
 import { Lock, ShieldCheck, User, Eye, EyeOff, Sparkles, KeyRound, ArrowRight } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 interface Props {
   settings: ShopSettings;
@@ -14,6 +15,22 @@ export const AuthLockScreen: React.FC<Props> = ({ settings, onUnlock }) => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [isShake, setIsShake] = useState(false);
+  const [cloudSettings, setCloudSettings] = useState<ShopSettings | null>(null);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      supabase
+        .from('shop_settings')
+        .select('data')
+        .eq('id', 'default')
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.data) {
+            setCloudSettings(data.data as ShopSettings);
+          }
+        });
+    }
+  }, []);
 
   const handleKeyClick = (char: string) => {
     setError('');
@@ -37,27 +54,50 @@ export const AuthLockScreen: React.FC<Props> = ({ settings, onUnlock }) => {
     setPassword('');
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!password.trim()) {
       setError('Please enter your password / PIN');
       return;
     }
 
-    const ownerPin = settings.ownerPin || '1234';
-    const staffPin = settings.staffPin || '0000';
+    const currentActiveSettings = cloudSettings || settings;
+    let ownerPin = currentActiveSettings.ownerPin || '1234';
+    let staffPin = currentActiveSettings.staffPin || '0000';
+
+    // If local comparison fails, do an instant live check against Supabase
+    if (
+      (selectedRole === 'Owner' && password !== ownerPin) ||
+      (selectedRole === 'Staff' && password !== staffPin)
+    ) {
+      if (isSupabaseConfigured) {
+        try {
+          const { data } = await supabase
+            .from('shop_settings')
+            .select('data')
+            .eq('id', 'default')
+            .maybeSingle();
+          if (data?.data) {
+            if (data.data.ownerPin) ownerPin = data.data.ownerPin;
+            if (data.data.staffPin) staffPin = data.data.staffPin;
+          }
+        } catch {
+          // ignore error
+        }
+      }
+    }
 
     if (selectedRole === 'Owner') {
       if (password === ownerPin) {
         onUnlock('Owner', rememberMe);
       } else {
-        triggerShake('Incorrect Owner Password. (Default: 1234)');
+        triggerShake('Incorrect Owner Password.');
       }
     } else {
       if (password === staffPin) {
         onUnlock('Staff', rememberMe);
       } else {
-        triggerShake('Incorrect Staff Password. (Default: 0000)');
+        triggerShake('Incorrect Staff Password.');
       }
     }
   };

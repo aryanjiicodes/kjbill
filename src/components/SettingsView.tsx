@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShopSettings } from '../types';
 import { StorageService } from '../services/storage';
-import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2 } from 'lucide-react';
+import { Settings, Save, Download, Upload, ShieldCheck, KeyRound, Building2, Database, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface Props {
   settings: ShopSettings;
@@ -13,6 +13,27 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
+  const [dbStatus, setDbStatus] = useState<{ testing: boolean; result: { ok: boolean; message: string; code?: string } | null }>({
+    testing: false,
+    result: null,
+  });
+  const [syncStatus, setSyncStatus] = useState<{ syncing: boolean; message: string | null }>({
+    syncing: false,
+    message: null,
+  });
+
+  const handleTestDatabase = async () => {
+    setDbStatus({ testing: true, result: null });
+    const res = await StorageService.testConnection();
+    setDbStatus({ testing: false, result: res });
+  };
+
+  const handleSyncToCloud = async () => {
+    setSyncStatus({ syncing: true, message: null });
+    const res = await StorageService.syncAllToCloud();
+    setSyncStatus({ syncing: false, message: res.message });
+    setTimeout(() => setSyncStatus((prev) => ({ ...prev, message: null })), 5000);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,6 +333,90 @@ export const SettingsView: React.FC<Props> = ({ settings, onRefresh }) => {
           </button>
         </div>
       </form>
+
+      {/* Cloud Database Sync & Diagnostics */}
+      <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+          <div className="flex items-center gap-2">
+            <Database className="w-5 h-5 text-amber-600" />
+            <h2 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
+              Cloud Database (Supabase) Connection
+            </h2>
+          </div>
+          <span className="text-xs font-mono text-stone-500">
+            https://tlxyazpkbalumggwdnrg.supabase.co
+          </span>
+        </div>
+
+        <p className="text-xs text-stone-600">
+          Your invoices, customer records, and security PINs are synced to Supabase Cloud so all devices (mobile, counter PC, tablet) stay in sync in real time.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleTestDatabase}
+            disabled={dbStatus.testing}
+            className="px-4 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${dbStatus.testing ? 'animate-spin text-amber-400' : ''}`} />
+            <span>{dbStatus.testing ? 'Testing Connection...' : 'Test Database Connection'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSyncToCloud}
+            disabled={syncStatus.syncing}
+            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-bold text-xs rounded-xl flex items-center gap-2 transition-colors shadow-sm"
+          >
+            <Upload className="w-4 h-4" />
+            <span>{syncStatus.syncing ? 'Syncing...' : 'Upload All Local Data to Cloud'}</span>
+          </button>
+        </div>
+
+        {syncStatus.message && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
+            {syncStatus.message}
+          </div>
+        )}
+
+        {dbStatus.result && (
+          <div
+            className={`p-4 rounded-xl border text-xs space-y-2 ${
+              dbStatus.result.ok
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
+            }`}
+          >
+            <div className="flex items-center gap-2 font-bold text-sm">
+              {dbStatus.result.ok ? (
+                <>
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Database Connected Successfully!</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-rose-600" />
+                  <span>Database Connection Issue</span>
+                </>
+              )}
+            </div>
+            <p className="font-mono text-xs">{dbStatus.result.message}</p>
+            {dbStatus.result.code === '42501' && (
+              <div className="mt-2 p-3 bg-white/80 rounded-lg border border-rose-300 font-sans text-stone-800 space-y-1.5">
+                <p className="font-bold text-rose-900">How to Fix in 30 Seconds:</p>
+                <p>In your Supabase Dashboard, go to <strong>SQL Editor</strong> and run:</p>
+                <pre className="bg-stone-900 text-amber-300 p-2 rounded text-[11px] overflow-x-auto font-mono">
+                  ALTER TABLE shop_settings DISABLE ROW LEVEL SECURITY;
+                </pre>
+                <p className="text-[11px] text-stone-600">
+                  (Or run the complete RLS unlock script provided in the assistant chat).
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Backup & Data Export Section */}
       <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">

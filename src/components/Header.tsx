@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRole, ShopSettings, MetalRates } from '../types';
-import { Plus, ShieldCheck, User, Sparkles, TrendingUp } from 'lucide-react';
+import { Plus, ShieldCheck, User, Sparkles, TrendingUp, Lock } from 'lucide-react';
 
 export type NavTab =
   | 'dashboard'
@@ -22,6 +22,7 @@ interface Props {
   settings: ShopSettings;
   rates: MetalRates;
   onNewInvoice: () => void;
+  onLock: () => void;
 }
 
 export const Header: React.FC<Props> = ({
@@ -32,6 +33,7 @@ export const Header: React.FC<Props> = ({
   settings,
   rates,
   onNewInvoice,
+  onLock,
 }) => {
   const navItems: { id: NavTab; label: string }[] = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -151,6 +153,15 @@ export const Header: React.FC<Props> = ({
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Create Bill</span>
+          </button>
+
+          <button
+            onClick={onLock}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-stone-800 hover:bg-rose-950 hover:border-rose-700/60 text-stone-400 hover:text-rose-300 border border-stone-700 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-colors"
+            title="Lock Website / Sign Out"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Lock</span>
           </button>
         </div>
       </div>

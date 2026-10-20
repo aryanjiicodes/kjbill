@@ -15,6 +15,7 @@ import { StorageService } from './services/storage';
 import { openWhatsAppInvoice } from './utils/whatsapp';
 import { Header, NavTab } from './components/Header';
 import { PinModal } from './components/PinModal';
+import { AuthLockScreen } from './components/AuthLockScreen';
 import { Dashboard } from './components/Dashboard';
 import { InvoiceForm } from './components/InvoiceForm';
 import { InvoicesList } from './components/InvoicesList';
@@ -29,7 +30,15 @@ import { SettingsView } from './components/SettingsView';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  const [currentRole, setCurrentRole] = useState<UserRole>('Owner');
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    const remembered = localStorage.getItem('kj_unlocked_device');
+    const session = sessionStorage.getItem('kj_unlocked_session');
+    return Boolean(remembered || session);
+  });
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const role = (localStorage.getItem('kj_unlocked_device') || sessionStorage.getItem('kj_unlocked_session')) as UserRole;
+    return role === 'Staff' ? 'Staff' : 'Owner';
+  });
   const [showPinModal, setShowPinModal] = useState(false);
 
   // Core Data States
@@ -90,9 +99,30 @@ export default function App() {
     setActiveTab('invoices');
   };
 
+  const handleUnlock = (role: UserRole, remember: boolean) => {
+    setCurrentRole(role);
+    setIsUnlocked(true);
+    sessionStorage.setItem('kj_unlocked_session', role);
+    if (remember) {
+      localStorage.setItem('kj_unlocked_device', role);
+    } else {
+      localStorage.removeItem('kj_unlocked_device');
+    }
+  };
+
+  const handleLock = () => {
+    setIsUnlocked(false);
+    sessionStorage.removeItem('kj_unlocked_session');
+    localStorage.removeItem('kj_unlocked_device');
+  };
+
   const handleConvertToInvoice = (order: JewelleryOrder) => {
     setActiveTab('billing');
   };
+
+  if (!isUnlocked) {
+    return <AuthLockScreen settings={settings} onUnlock={handleUnlock} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] text-stone-900 font-sans flex flex-col selection:bg-amber-500/20 selection:text-amber-900">
@@ -105,6 +135,7 @@ export default function App() {
         settings={settings}
         rates={rates}
         onNewInvoice={() => setActiveTab('billing')}
+        onLock={handleLock}
       />
 
       {/* Main Content Area */}

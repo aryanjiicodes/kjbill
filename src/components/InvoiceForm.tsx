@@ -2102,7 +2102,7 @@ export const InvoiceForm: React.FC<Props> = ({
           createdByStaff: currentStaffName,
           bankDetails: {
             bankName: settings.bankName,
-            accountName: settings.accountName,
+            accountName: (settings.accountName || 'KAMAKHYA JEWELLERS').replace(/kamkhya/i, 'KAMAKHYA'),
             accountNumber: settings.accountNumber,
             ifscCode: settings.ifscCode,
             upiId: settings.upiId,

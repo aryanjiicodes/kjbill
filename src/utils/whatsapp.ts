@@ -17,11 +17,13 @@ export function generateWhatsAppInvoiceMessage(invoice: Invoice, settings: ShopS
     deductionsBlock += '\n━━━━━━━━━━━━━━━━━━━━\n';
     deductionsBlock += '📌 *DEDUCTIONS*\n';
     if (invoice.oldGoldAmount && invoice.oldGoldAmount > 0) {
-      let oldGoldDetail = '';
-      if (invoice.oldGoldExchange) {
-        oldGoldDetail = ` (${invoice.oldGoldExchange.grossWeight}g ${invoice.oldGoldExchange.purity} @ ₹${invoice.oldGoldExchange.ratePerGram.toLocaleString('en-IN')}/g)`;
+      if (invoice.oldGoldExchange && invoice.oldGoldExchange.grossWeight > 0) {
+        const oldGoldDetail = ` (${invoice.oldGoldExchange.grossWeight}g ${invoice.oldGoldExchange.purity} @ ₹${invoice.oldGoldExchange.ratePerGram.toLocaleString('en-IN')}/g${invoice.oldGoldExchange.deductionPercent > 0 ? ` less ${invoice.oldGoldExchange.deductionPercent}% loss = ${invoice.oldGoldExchange.netWeight}g net` : ''})`;
+        deductionsBlock += `   Old Gold Exchange: −${formatINR(invoice.oldGoldAmount)}${oldGoldDetail}\n`;
+      } else {
+        const label = invoice.oldGoldExchange?.description || 'Trade-in Credit / Adjustment';
+        deductionsBlock += `   ${label}: −${formatINR(invoice.oldGoldAmount)}\n`;
       }
-      deductionsBlock += `   Old Gold Exchange: −${formatINR(invoice.oldGoldAmount)}${oldGoldDetail}\n`;
     }
     if (invoice.advanceAdjusted && invoice.advanceAdjusted > 0) {
       deductionsBlock += `   Advance Adjusted: −${formatINR(invoice.advanceAdjusted)}\n`;

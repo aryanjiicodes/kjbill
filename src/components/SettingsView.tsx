@@ -155,7 +155,11 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    StorageService.saveSettings(formData);
+    const sanitizedForm = {
+      ...formData,
+      accountName: formData.accountName ? formData.accountName.replace(/kamkhya/i, 'KAMAKHYA') : 'KAMAKHYA JEWELLERS',
+    };
+    StorageService.saveSettings(sanitizedForm);
 
     const updatedRates: MetalRates = {
       ...(rates || StorageService.getRates()),

@@ -295,7 +295,9 @@ export const defaultInvoices: Invoice[] = [
       },
       {
         id: 'item_6',
-        productName: 'Gold Bracelet',
+        productName: '22K Hallmarked Gold Handcrafted Kada Bracelet',
+        itemCode: 'KJ-KDA-03',
+        huid: 'KJ916D',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',

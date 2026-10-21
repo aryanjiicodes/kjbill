@@ -226,7 +226,13 @@ export const StorageService = {
   },
 
   getInvoices(): Invoice[] {
-    return getStored<Invoice[]>(STORAGE_KEYS.INVOICES, defaultInvoices);
+    const list = getStored<Invoice[]>(STORAGE_KEYS.INVOICES, defaultInvoices);
+    return list.map((inv) => {
+      if (inv.bankDetails?.accountName && /kamkhya/i.test(inv.bankDetails.accountName)) {
+        inv.bankDetails.accountName = 'KAMAKHYA JEWELLERS';
+      }
+      return inv;
+    });
   },
 
   saveInvoice(invoice: Invoice): Invoice {

@@ -30,6 +30,11 @@ interface SheetProps {
 
 const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
   ({ invoice, settings, copyTitle, copySubtitle, terms, totalOtherCharges, activeQrUrl }, ref) => {
+    const hasStones = invoice.items.some(
+      (item) => (item.stoneWeight && item.stoneWeight > 0) || (item.stoneCharges && item.stoneCharges > 0)
+    );
+    const totalStoneCharges = invoice.items.reduce((s, i) => s + (i.stoneCharges || 0), 0);
+
     return (
       <div
         ref={ref}
@@ -59,29 +64,29 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
             <div className="border-b-2 border-stone-800 pb-2.5 mb-2.5">
               <div className="flex items-center justify-between gap-3">
                 {/* Left: Main Brand Logo (Gold Round KJ Emblem) */}
-                <div className="w-[110px] shrink-0 flex flex-col items-center justify-center">
+                <div className="w-[125px] sm:w-[135px] shrink-0 flex flex-col items-center justify-center">
                   <img
                     src={mainLogoImg}
                     alt="KAMAKHYA JEWELLERS"
-                    className="h-[76px] w-[76px] object-contain drop-shadow-xs"
+                    className="h-[88px] w-[88px] object-contain drop-shadow-xs"
                   />
-                  <span className="text-[8px] font-bold text-amber-950 uppercase tracking-widest mt-0.5">ESTB. 2008</span>
+                  <span className="text-[8.5px] font-extrabold text-amber-950 uppercase tracking-widest mt-1">ESTB. 2006</span>
                 </div>
 
                 {/* Center: Shop Details & GSTIN */}
-                <div className="text-center flex-1 px-3">
-                  <div className="mb-1.5">
-                    <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-1 rounded-full text-[10.5px] tracking-wider uppercase shadow-xs">
+                <div className="text-center flex-1 px-2">
+                  <div className="mb-1">
+                    <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-0.5 rounded-full text-[10px] tracking-wider uppercase shadow-xs">
                       ★ GST TAX INVOICE ★
                     </span>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-extrabold tracking-wider text-stone-900 mt-1 mb-0.5 uppercase">
+                  <h1 className="text-2xl sm:text-3xl font-serif font-extrabold tracking-wider text-stone-900 mt-0.5 mb-0.5 uppercase">
                     KAMAKHYA JEWELLERS
                   </h1>
-                  <div className="text-[11.5px] font-serif text-amber-950 font-bold mb-1">
+                  <div className="text-[11.5px] font-serif text-amber-950 font-bold mb-0.5">
                     कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
                   </div>
-                  <p className="text-[11px] text-stone-600 max-w-md mx-auto leading-normal">
+                  <p className="text-[10.5px] text-stone-600 max-w-md mx-auto leading-normal">
                     {settings.address}
                   </p>
                   <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
@@ -99,13 +104,13 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                 </div>
 
                 {/* Right: BIS Hallmark Logo */}
-                <div className="w-[105px] shrink-0 flex flex-col items-center justify-center text-center">
+                <div className="w-[125px] sm:w-[135px] shrink-0 flex flex-col items-center justify-center text-center">
                   <img
                     src={bisLogoImg}
                     alt="BIS Hallmark"
-                    className="max-h-[64px] w-auto object-contain"
+                    className="h-[78px] w-auto max-w-[110px] object-contain"
                   />
-                  <span className="text-[8px] font-bold text-blue-900 tracking-wider mt-0.5 uppercase">
+                  <span className="text-[8.5px] font-extrabold text-blue-900 tracking-wider mt-1 uppercase">
                     BIS 916 Hallmark
                   </span>
                 </div>
@@ -177,11 +182,16 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                 <thead>
                   <tr className="bg-stone-100 print:bg-stone-100 border-b border-stone-300 text-stone-800 font-bold">
                     <th className="py-1 px-1 text-center w-6 border-r border-stone-300">#</th>
-                    <th className="py-1 px-1.5 border-r border-stone-300 min-w-[150px]">Product Description</th>
+                    <th className="py-1 px-1.5 border-r border-stone-300 min-w-[140px]">Product Description</th>
                     <th className="py-1 px-1 text-center border-r border-stone-300">HSN</th>
                     <th className="py-1 px-1 text-center border-r border-stone-300">Purity</th>
                     <th className="py-1 px-1.5 text-right border-r border-stone-300">Gross (g)</th>
-                    <th className="py-1 px-1 text-right border-r border-stone-300">Stone (g)</th>
+                    {hasStones && (
+                      <>
+                        <th className="py-1 px-1 text-right border-r border-stone-300 whitespace-nowrap">Stone (g)</th>
+                        <th className="py-1 px-1 text-right border-r border-stone-300 whitespace-nowrap">Stone (₹)</th>
+                      </>
+                    )}
                     <th className="py-1 px-1.5 text-right border-r border-stone-300">Net (g)</th>
                     <th className="py-1 px-1.5 text-right border-r border-stone-300">Rate</th>
                     <th className="py-1 px-1 text-center border-r border-stone-300">Mkg %</th>
@@ -214,7 +224,6 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                             <div className="text-[9px] text-stone-500 font-normal">
                               Stone: {item.stoneDescription || 'Studded'}
                               {item.stoneRate ? ` @ ₹${item.stoneRate}/g` : ''}
-                              {item.stoneCharges > 0 ? ` (₹${item.stoneCharges.toFixed(2)})` : ''}
                             </div>
                           )}
                         </td>
@@ -227,9 +236,16 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                         <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
                           {item.grossWeight.toFixed(3)}
                         </td>
-                        <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-600">
-                          {item.stoneWeight > 0 ? item.stoneWeight.toFixed(3) : '0'}
-                        </td>
+                        {hasStones && (
+                          <>
+                            <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-600">
+                              {item.stoneWeight > 0 ? item.stoneWeight.toFixed(3) : '-'}
+                            </td>
+                            <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-700">
+                              {item.stoneCharges > 0 ? `₹${item.stoneCharges.toFixed(2)}` : '-'}
+                            </td>
+                          </>
+                        )}
                         <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums font-bold text-stone-900 bg-amber-50/40 print:bg-transparent">
                           {item.netWeight.toFixed(3)}
                         </td>
@@ -273,9 +289,16 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                     <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
                       {invoice.totalGrossWeight.toFixed(3)}
                     </td>
-                    <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums">
-                      {invoice.totalStoneWeight.toFixed(3)}
-                    </td>
+                    {hasStones && (
+                      <>
+                        <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums">
+                          {invoice.totalStoneWeight.toFixed(3)}
+                        </td>
+                        <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums font-semibold text-stone-800">
+                          {totalStoneCharges > 0 ? `₹${totalStoneCharges.toFixed(2)}` : '—'}
+                        </td>
+                      </>
+                    )}
                     <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums text-amber-950 font-extrabold bg-amber-100/40">
                       {invoice.totalNetWeight.toFixed(3)}
                     </td>
@@ -461,9 +484,9 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
           {/* Declarations & Signature Footer */}
           <div className="grid grid-cols-12 gap-3 pt-2 border-t border-stone-200 mt-auto">
             {/* Declaration and Terms */}
-            <div className="col-span-8 pr-3 flex flex-col justify-between">
+            <div className="col-span-8 pr-3 flex flex-col justify-between min-h-[110px]">
               <div>
-                <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-0.5">
+                <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-1">
                   Declaration & Showroom Terms:
                 </div>
                 <ul className="text-[9px] text-stone-600 space-y-0.5 list-disc pl-3 leading-tight">
@@ -472,9 +495,9 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                   ))}
                 </ul>
               </div>
-              <div className="pt-2">
-                <div className="w-40 border-b border-stone-400 mb-0.5"></div>
-                <span className="text-[8.5px] text-stone-500 font-medium">Customer Signature / Received</span>
+              <div className="mt-5 pt-1">
+                <div className="w-48 border-b border-stone-400 mb-1"></div>
+                <span className="text-[9px] text-stone-600 font-semibold tracking-wide">Customer Signature / Received</span>
               </div>
             </div>
 

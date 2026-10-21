@@ -73,6 +73,9 @@ export interface InvoiceItem {
   stoneDescription?: string;
   stoneRate?: number; // Stone rate per gram / carat
   stoneCharges: number;
+  itemCode?: string; // Tag / SKU / Barcode code (e.g. RNG-22K-08)
+  huid?: string; // 6-character BIS Hallmark Unique ID (voluntary as per BIS guidance)
+  hallmarkingCharges?: number; // Official BIS Hallmarking fee (e.g. ₹45/pc)
   makingChargeType: MakingChargeType;
   makingChargeRate: number; // ₹/g, fixed ₹, or %
   makingCharges: number;
@@ -103,7 +106,10 @@ export interface Invoice {
   customerAddress: string;
   customerState: string;
   customerStateCode: string;
+  customerPincode?: string;
+  customerPan?: string;
   customerGstin?: string;
+  deliveryAddress?: string;
   isInterState: boolean;
   items: InvoiceItem[];
   totalGrossWeight: number;

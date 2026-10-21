@@ -30,6 +30,7 @@ export const defaultSettings: ShopSettings = {
   financialYear: '2026-27',
   termsAndConditions: [
     'Certified 100% BIS Hallmarked jewellery. Purity & weight guaranteed as per tax invoice.',
+    'Consumers may get their hallmarked jewellery tested/verified for purity at any BIS-recognised Assaying and Hallmarking Centre (AHC).',
     'Exchange or Buyback will be accepted strictly on prevailing market metal rates as per store policy.',
     'Stone weight has been deducted from gross weight to arrive at net precious metal weight.',
     'Customers are requested to verify the ornaments, hallmark stamp, and weight before leaving the showroom counter.',
@@ -174,7 +175,9 @@ export const defaultInvoices: Invoice[] = [
     items: [
       {
         id: 'item_1',
-        productName: 'Gold Ring',
+        productName: '22K Gold Handcrafted Ring with Ruby',
+        itemCode: 'KJ-RNG-01',
+        huid: 'KJ916A',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',
@@ -196,7 +199,8 @@ export const defaultInvoices: Invoice[] = [
       },
       {
         id: 'item_2',
-        productName: 'Silver Anklet',
+        productName: '925 Sterling Silver Traditional Payal (Anklet)',
+        itemCode: 'KJ-PYL-01',
         metalType: 'Silver',
         purity: '925',
         hsnCode: '711311',
@@ -218,7 +222,9 @@ export const defaultInvoices: Invoice[] = [
       },
       {
         id: 'item_3',
-        productName: 'Gold Necklace',
+        productName: '22K Hallmarked Floral Bridal Necklace',
+        itemCode: 'KJ-NCK-01',
+        huid: 'KJ916B',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',
@@ -240,7 +246,9 @@ export const defaultInvoices: Invoice[] = [
       },
       {
         id: 'item_4',
-        productName: 'Gold Earrings',
+        productName: '22K Hallmarked Gold Traditional Jhumka Earrings',
+        itemCode: 'KJ-JMK-02',
+        huid: 'KJ916C',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',
@@ -249,6 +257,8 @@ export const defaultInvoices: Invoice[] = [
         netWeight: 15,
         ratePerGram: 6200,
         metalValue: 93000,
+        stoneDescription: 'Certified Synthetic Emerald',
+        stoneRate: 6200,
         stoneCharges: 6200,
         makingChargeType: 'fixed',
         makingChargeRate: 0,
@@ -262,7 +272,8 @@ export const defaultInvoices: Invoice[] = [
       },
       {
         id: 'item_5',
-        productName: 'Silver Chain',
+        productName: '925 Sterling Silver Italian Figaro Chain',
+        itemCode: 'KJ-CHN-05',
         metalType: 'Silver',
         purity: '925',
         hsnCode: '711311',

@@ -70,6 +70,13 @@ export const InvoiceForm: React.FC<Props> = ({
   const [whatsappMobile, setWhatsappMobile] = useState('');
   const [showWhatsAppPreview, setShowWhatsAppPreview] = useState(false);
 
+  // Customer recipient & GST Rule 46 compliance states
+  const [custNameInput, setCustNameInput] = useState('');
+  const [custAddressInput, setCustAddressInput] = useState('');
+  const [custPincodeInput, setCustPincodeInput] = useState('110096');
+  const [custPanInput, setCustPanInput] = useState('');
+  const [custDeliveryAddressInput, setCustDeliveryAddressInput] = useState('');
+
   // New inline customer form fields
   const [newCustName, setNewCustName] = useState('');
   const [newCustMobile, setNewCustMobile] = useState('');
@@ -123,9 +130,11 @@ export const InvoiceForm: React.FC<Props> = ({
     const nextNum = StorageService.generateNextInvoiceNumber();
     setInvoiceNumber(nextNum);
 
-    // Initial item row
+    // Initial item row with professional description & voluntary BIS HUID trust badge
     const defaultItem = calculateItemRow({
-      productName: 'Gold Jewellery Item',
+      productName: '22K Gold Handcrafted Ring with Ruby',
+      itemCode: 'KJ-RNG-01',
+      huid: 'KJ916A',
       metalType: 'Gold',
       purity: '22K',
       hsnCode: '711319',
@@ -154,6 +163,11 @@ export const InvoiceForm: React.FC<Props> = ({
     setIsWalkIn(false);
     setCustomerSearch('');
     setWhatsappMobile(cust.mobile);
+    setCustNameInput(cust.name);
+    setCustAddressInput(cust.address);
+    setCustPincodeInput(cust.pincode || '110096');
+    setCustPanInput(cust.pan || '');
+    setCustDeliveryAddressInput(cust.address);
     // Check if customer has advance
     if (cust.availableAdvanceBalance > 0) {
       setApplyAdvance(true);
@@ -168,6 +182,11 @@ export const InvoiceForm: React.FC<Props> = ({
     setIsWalkIn(true);
     setSelectedCustomer(null);
     setWhatsappMobile('9818144011');
+    setCustNameInput('Counter Walk-in Customer');
+    setCustAddressInput('Showroom Counter Handover, New Delhi');
+    setCustPincodeInput('110096');
+    setCustPanInput('');
+    setCustDeliveryAddressInput('Showroom Counter Handover');
     setApplyAdvance(false);
     setAdvanceAdjustAmount(0);
   };
@@ -195,6 +214,11 @@ export const InvoiceForm: React.FC<Props> = ({
     StorageService.saveCustomer(newCust);
     setSelectedCustomer(newCust);
     setWhatsappMobile(newCust.mobile);
+    setCustNameInput(newCust.name);
+    setCustAddressInput(newCust.address);
+    setCustPincodeInput(newCust.pincode || '110096');
+    setCustPanInput('');
+    setCustDeliveryAddressInput(newCust.address);
     setIsWalkIn(false);
     setShowAddCustomerModal(false);
     setNewCustName('');
@@ -345,12 +369,17 @@ export const InvoiceForm: React.FC<Props> = ({
       return;
     }
 
-    const customerName = selectedCustomer ? selectedCustomer.name : 'Counter Walk-in Customer';
+    const customerName = (custNameInput && custNameInput.trim())
+      || (selectedCustomer ? selectedCustomer.name : 'Counter Walk-in Customer');
     const customerMobile = selectedCustomer ? selectedCustomer.mobile : (whatsappMobile || '9818144011');
-    const customerAddress = selectedCustomer ? selectedCustomer.address : 'Delhi';
-    const customerState = selectedCustomer ? selectedCustomer.state : 'Delhi';
-    const customerStateCode = selectedCustomer ? selectedCustomer.stateCode : '07';
+    const customerAddress = (custAddressInput && custAddressInput.trim())
+      || (selectedCustomer ? selectedCustomer.address : 'Showroom Counter Handover, New Delhi');
+    const customerState = selectedCustomer ? selectedCustomer.state : (isInterState ? 'Outside Delhi' : 'Delhi');
+    const customerStateCode = selectedCustomer ? selectedCustomer.stateCode : (isInterState ? '99' : '07');
     const customerGstin = selectedCustomer ? selectedCustomer.gstin : undefined;
+    const customerPincode = (custPincodeInput && custPincodeInput.trim()) || (selectedCustomer ? selectedCustomer.pincode : '110096');
+    const customerPan = (custPanInput && custPanInput.trim().toUpperCase()) || undefined;
+    const deliveryAddress = (custDeliveryAddressInput && custDeliveryAddressInput.trim()) || customerAddress;
 
     // Generate dynamic UPI QR Code Data URL
     const qrDataUrl = await generateUpiQrDataUrl(
@@ -394,7 +423,10 @@ export const InvoiceForm: React.FC<Props> = ({
       customerAddress,
       customerState,
       customerStateCode,
+      customerPincode,
+      customerPan,
       customerGstin,
+      deliveryAddress,
       isInterState,
       items,
       totalGrossWeight: summary.totalGrossWeight,
@@ -409,12 +441,16 @@ export const InvoiceForm: React.FC<Props> = ({
       grandTotal: summary.grandTotal,
       oldGoldAmount: effectiveOldGold > 0 ? effectiveOldGold : undefined,
       oldGoldExchange: effectiveOldGold > 0 ? {
-        description: oldGoldDesc || 'Old Gold Return / Exchange',
-        grossWeight: Number(oldGoldGrossWeight) || 0,
-        purity: oldGoldPurity,
-        deductionPercent: Number(oldGoldDeductionPercent) || 0,
-        netWeight: Math.round(((Number(oldGoldGrossWeight) || 0) * (1 - (Number(oldGoldDeductionPercent) || 0) / 100)) * 1000) / 1000,
-        ratePerGram: Number(oldGoldRatePerGram) || 0,
+        description: oldGoldMode === 'calculated' && oldGoldGrossWeight > 0
+          ? (oldGoldDesc || 'Old Gold Return / Exchange')
+          : (oldGoldDesc && oldGoldDesc !== 'Old Gold Return / Exchange' ? oldGoldDesc : 'Trade-in Credit / Adjustment Voucher'),
+        grossWeight: oldGoldMode === 'calculated' ? (Number(oldGoldGrossWeight) || 0) : 0,
+        purity: oldGoldMode === 'calculated' && oldGoldGrossWeight > 0 ? oldGoldPurity : 'N/A',
+        deductionPercent: oldGoldMode === 'calculated' ? (Number(oldGoldDeductionPercent) || 0) : 0,
+        netWeight: oldGoldMode === 'calculated' && oldGoldGrossWeight > 0
+          ? Math.round(((Number(oldGoldGrossWeight) || 0) * (1 - (Number(oldGoldDeductionPercent) || 0) / 100)) * 1000) / 1000
+          : 0,
+        ratePerGram: oldGoldMode === 'calculated' && oldGoldGrossWeight > 0 ? (Number(oldGoldRatePerGram) || 0) : 0,
         totalValue: effectiveOldGold,
       } : undefined,
       advanceAdjusted: effectiveAdvanceAdjust,
@@ -432,7 +468,7 @@ export const InvoiceForm: React.FC<Props> = ({
       createdByStaff: currentStaffName,
       bankDetails: {
         bankName: settings.bankName,
-        accountName: settings.accountName,
+        accountName: (settings.accountName || 'KAMAKHYA JEWELLERS').replace(/kamkhya/i, 'KAMAKHYA'),
         accountNumber: settings.accountNumber,
         ifscCode: settings.ifscCode,
         upiId: settings.upiId,
@@ -605,6 +641,91 @@ export const InvoiceForm: React.FC<Props> = ({
           </div>
         )}
 
+        {/* Recipient Details for GST Rule 46 Compliance */}
+        <div className="p-3.5 bg-stone-50/90 rounded-xl border border-stone-200 text-xs space-y-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 border-b border-stone-200 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-stone-900 uppercase tracking-wider text-[11px]">
+                Invoice Recipient Details (GST Rule 46 Compliant)
+              </span>
+              <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[9.5px] font-bold px-2 py-0.5 rounded">
+                Required for bills ≥ ₹50,000
+              </span>
+            </div>
+            <span className="text-[10px] text-stone-500">
+              Ensure accurate customer name, street address, state & delivery destination
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-4">
+              <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                Recipient / Customer Name *
+              </label>
+              <input
+                type="text"
+                value={custNameInput}
+                onChange={(e) => setCustNameInput(e.target.value)}
+                placeholder="Full Customer / Organisation Name"
+                className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg font-semibold focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            <div className="sm:col-span-5">
+              <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                Full Street / Locality Address *
+              </label>
+              <input
+                type="text"
+                value={custAddressInput}
+                onChange={(e) => setCustAddressInput(e.target.value)}
+                placeholder="e.g. 78, Karol Bagh, Ajmal Khan Road, New Delhi"
+                className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            <div className="sm:col-span-3">
+              <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                Pincode
+              </label>
+              <input
+                type="text"
+                value={custPincodeInput}
+                onChange={(e) => setCustPincodeInput(e.target.value)}
+                placeholder="110096"
+                className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg font-mono focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            <div className="sm:col-span-4">
+              <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                Customer PAN (For High-Value Bills ≥ ₹2 Lakhs)
+              </label>
+              <input
+                type="text"
+                maxLength={10}
+                value={custPanInput}
+                onChange={(e) => setCustPanInput(e.target.value.toUpperCase())}
+                placeholder="e.g. ABCDE1234F"
+                className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg font-mono uppercase focus:outline-none focus:border-amber-600"
+              />
+            </div>
+
+            <div className="sm:col-span-8">
+              <label className="text-[11px] font-bold text-stone-700 block mb-1">
+                Delivery / Handover Destination (Shipped To)
+              </label>
+              <input
+                type="text"
+                value={custDeliveryAddressInput}
+                onChange={(e) => setCustDeliveryAddressInput(e.target.value)}
+                placeholder="Showroom Counter Handover or customer delivery address"
+                className="w-full px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg focus:outline-none focus:border-amber-600"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Place of supply toggle */}
         <div className="flex items-center gap-4 text-xs pt-1">
           <span className="font-semibold text-stone-700">Place of Supply:</span>
@@ -724,9 +845,9 @@ export const InvoiceForm: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Grid Section 1: Item Name, Metal, Purity & HSN */}
+                {/* Grid Section 1: Item Name, Tag, BIS HUID, Metal, Purity & HSN */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="sm:col-span-6">
+                  <div className="sm:col-span-4">
                     <label className="text-xs font-bold text-stone-700 block mb-1">
                       Product Name / Description *
                     </label>
@@ -734,19 +855,48 @@ export const InvoiceForm: React.FC<Props> = ({
                       type="text"
                       value={item.productName}
                       onChange={(e) => handleItemChange(idx, { productName: e.target.value })}
-                      placeholder="e.g. 22K Hallmarked Gold Bridal Necklace"
+                      placeholder="e.g. 22K Gold Handcrafted Ring with Ruby"
                       className="w-full px-3 py-2 text-sm font-semibold bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-stone-700 block mb-1">
+                      Tag / Item Code
+                    </label>
+                    <input
+                      type="text"
+                      value={item.itemCode || ''}
+                      onChange={(e) => handleItemChange(idx, { itemCode: e.target.value.toUpperCase() })}
+                      placeholder="e.g. KJ-RNG-01"
+                      className="w-full px-2.5 py-2 text-xs font-mono font-semibold bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:border-amber-600 uppercase"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-amber-950 block mb-1 flex items-center justify-between">
+                      <span>BIS HUID</span>
+                      <span className="text-[9.5px] font-normal text-amber-700">6-Char</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={item.huid || ''}
+                      onChange={(e) => handleItemChange(idx, { huid: e.target.value.toUpperCase() })}
+                      placeholder="e.g. KJ916A"
+                      className="w-full px-2.5 py-2 text-xs font-mono font-bold text-amber-900 bg-amber-50/50 border border-amber-300 rounded-lg focus:outline-none focus:border-amber-600 uppercase"
+                      title="Voluntary 6-character alphanumeric BIS Hallmark Unique Identification code"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-1">
                     <label className="text-xs font-bold text-stone-700 block mb-1">Metal</label>
                     <select
                       value={item.metalType}
                       onChange={(e) =>
                         handleItemChange(idx, { metalType: e.target.value as MetalType })
                       }
-                      className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg font-medium focus:outline-none"
+                      className="w-full px-2 py-2 text-xs bg-white border border-stone-300 rounded-lg font-medium focus:outline-none"
                     >
                       <option value="Gold">Gold</option>
                       <option value="Silver">Silver</option>
@@ -756,25 +906,25 @@ export const InvoiceForm: React.FC<Props> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-bold text-stone-700 block mb-1">Purity</label>
+                    <label className="text-xs font-bold text-stone-700 block mb-1">Purity (Fineness)</label>
                     <select
                       value={item.purity}
                       onChange={(e) => handleItemChange(idx, { purity: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg font-bold focus:outline-none text-stone-900"
+                      className="w-full px-2 py-2 text-xs bg-white border border-stone-300 rounded-lg font-bold focus:outline-none text-stone-900"
                     >
                       {item.metalType === 'Gold' ? (
                         <>
-                          <option value="22K">22K (916)</option>
-                          <option value="24K">24K (Pure)</option>
-                          <option value="18K">18K (750)</option>
-                          <option value="14K">14K (585)</option>
+                          <option value="22K">22K (916 Fineness)</option>
+                          <option value="24K">24K (999 Pure)</option>
+                          <option value="18K">18K (750 Fineness)</option>
+                          <option value="14K">14K (585 Fineness)</option>
                         </>
                       ) : item.metalType === 'Silver' ? (
                         <>
-                          <option value="Silver">Silver</option>
-                          <option value="925">925 Sterling</option>
-                          <option value="999">999 Fine</option>
-                          <option value="800">800 Silver</option>
+                          <option value="Silver">Silver (Standard)</option>
+                          <option value="925">925 (Sterling)</option>
+                          <option value="999">999 (Fine Silver)</option>
+                          <option value="800">800 (Silver)</option>
                         </>
                       ) : item.metalType === 'Platinum' ? (
                         <option value="Pt 950">Pt 950</option>
@@ -784,13 +934,13 @@ export const InvoiceForm: React.FC<Props> = ({
                     </select>
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-bold text-stone-700 block mb-1">HSN Code</label>
+                  <div className="sm:col-span-1">
+                    <label className="text-xs font-bold text-stone-700 block mb-1">HSN</label>
                     <input
                       type="text"
                       value={item.hsnCode}
                       onChange={(e) => handleItemChange(idx, { hsnCode: e.target.value })}
-                      className="w-full px-3 py-2 text-sm font-mono bg-stone-50 border border-stone-300 rounded-lg text-center font-semibold"
+                      className="w-full px-1.5 py-2 text-xs font-mono bg-stone-50 border border-stone-300 rounded-lg text-center font-semibold"
                     />
                   </div>
                 </div>
@@ -1052,9 +1202,27 @@ export const InvoiceForm: React.FC<Props> = ({
                         type="text"
                         value={item.productName}
                         onChange={(e) => handleItemChange(idx, { productName: e.target.value })}
-                        placeholder="e.g. Gold Bridal Necklace"
+                        placeholder="e.g. 22K Gold Handcrafted Ring with Ruby"
                         className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-md text-xs font-semibold focus:outline-none focus:border-amber-600"
                       />
+                      <div className="grid grid-cols-2 gap-1.5 mt-1">
+                        <input
+                          type="text"
+                          value={item.itemCode || ''}
+                          onChange={(e) => handleItemChange(idx, { itemCode: e.target.value.toUpperCase() })}
+                          placeholder="Tag / SKU #"
+                          className="px-1.5 py-0.5 text-[10px] font-mono bg-stone-50 border border-stone-200 rounded focus:outline-none uppercase"
+                        />
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={item.huid || ''}
+                          onChange={(e) => handleItemChange(idx, { huid: e.target.value.toUpperCase() })}
+                          placeholder="BIS HUID"
+                          className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded focus:outline-none uppercase"
+                          title="Voluntary BIS Hallmark Unique ID"
+                        />
+                      </div>
                     </td>
 
                     <td className="py-3 px-2">
@@ -1080,17 +1248,17 @@ export const InvoiceForm: React.FC<Props> = ({
                       >
                         {item.metalType === 'Gold' ? (
                           <>
-                            <option value="22K">22K</option>
-                            <option value="24K">24K</option>
-                            <option value="18K">18K</option>
-                            <option value="14K">14K</option>
+                            <option value="22K">22K (916)</option>
+                            <option value="24K">24K (999)</option>
+                            <option value="18K">18K (750)</option>
+                            <option value="14K">14K (585)</option>
                           </>
                         ) : item.metalType === 'Silver' ? (
                           <>
-                            <option value="Silver">Silver</option>
-                            <option value="925">925</option>
-                            <option value="999">999</option>
-                            <option value="800">800</option>
+                            <option value="Silver">Silver (Std)</option>
+                            <option value="925">925 (Sterling)</option>
+                            <option value="999">999 (Fine)</option>
+                            <option value="800">800 (Silver)</option>
                           </>
                         ) : item.metalType === 'Platinum' ? (
                           <option value="Pt 950">Pt 950</option>
@@ -1291,53 +1459,58 @@ export const InvoiceForm: React.FC<Props> = ({
                   <span className="font-semibold text-stone-600">Valuation Method:</span>
                   <button
                     type="button"
-                    onClick={() => setOldGoldMode('lumpsum')}
+                    onClick={() => {
+                      setOldGoldMode('calculated');
+                    }}
                     className={`px-3 py-1 rounded-md text-xs font-semibold border ${
-                      oldGoldMode === 'lumpsum'
-                        ? 'bg-stone-900 text-white border-stone-900'
+                      oldGoldMode === 'calculated'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
                         : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100'
                     }`}
                   >
-                    Direct Return Amount (₹)
+                    Calculate by Weight & Karat (Recommended)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setOldGoldMode('calculated')}
+                    onClick={() => {
+                      setOldGoldMode('lumpsum');
+                      setOldGoldGrossWeight(0);
+                    }}
                     className={`px-3 py-1 rounded-md text-xs font-semibold border ${
-                      oldGoldMode === 'calculated'
-                        ? 'bg-stone-900 text-white border-stone-900'
+                      oldGoldMode === 'lumpsum'
+                        ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
                         : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100'
                     }`}
                   >
-                    Calculate by Weight & Karat
+                    Direct Trade-in Credit / Discount (₹)
                   </button>
                 </div>
 
-                {/* If Lump-sum Mode */}
+                {/* If Lump-sum / Direct Trade-in Mode */}
                 {oldGoldMode === 'lumpsum' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3 rounded-lg border border-stone-200">
                     <div>
                       <label className="text-[11px] font-semibold text-stone-600 block mb-1">
-                        Old Jewellery Description
+                        Credit / Deduction Description
                       </label>
                       <input
                         type="text"
                         value={oldGoldDesc}
                         onChange={(e) => setOldGoldDesc(e.target.value)}
-                        placeholder="e.g. Old 22K bangles / chain"
+                        placeholder="e.g. Trade-in Credit / Festive Voucher / Exchange Adjustment"
                         className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-300 rounded-md focus:outline-none"
                       />
                     </div>
                     <div>
                       <label className="text-[11px] font-bold text-rose-800 block mb-1">
-                        Direct Old Gold Value (₹) to Deduct *
+                        Direct Credit Amount (₹) to Deduct *
                       </label>
                       <input
                         type="number"
                         min="0"
                         value={oldGoldAmount || ''}
                         onChange={(e) => setOldGoldAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                        placeholder="e.g. 25000"
+                        placeholder="e.g. 5600"
                         className="w-full px-3 py-1.5 text-sm font-mono font-bold text-rose-700 bg-rose-50/50 border border-rose-300 rounded-md focus:outline-none focus:ring-1 focus:ring-rose-500"
                       />
                     </div>
@@ -1888,11 +2061,14 @@ export const InvoiceForm: React.FC<Props> = ({
           date: invoiceDate,
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
           customerId: selectedCustomer ? selectedCustomer.id : 'WALK_IN',
-          customerName: previewCustName,
+          customerName: custNameInput.trim() || previewCustName,
           customerMobile: previewCustMobile,
-          customerAddress: selectedCustomer ? selectedCustomer.address : 'Delhi',
-          customerState: selectedCustomer ? selectedCustomer.state : 'Delhi',
-          customerStateCode: selectedCustomer ? selectedCustomer.stateCode : '07',
+          customerAddress: custAddressInput.trim() || (selectedCustomer ? selectedCustomer.address : 'Showroom Counter Handover, New Delhi'),
+          customerState: selectedCustomer ? selectedCustomer.state : (isInterState ? 'Outside Delhi' : 'Delhi'),
+          customerStateCode: selectedCustomer ? selectedCustomer.stateCode : (isInterState ? '99' : '07'),
+          customerPincode: custPincodeInput.trim() || (selectedCustomer ? selectedCustomer.pincode : '110096'),
+          customerPan: custPanInput.trim().toUpperCase() || undefined,
+          deliveryAddress: custDeliveryAddressInput.trim() || custAddressInput.trim() || (selectedCustomer ? selectedCustomer.address : 'Showroom Counter Handover'),
           isInterState,
           items,
           totalGrossWeight: summary.totalGrossWeight,

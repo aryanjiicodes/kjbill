@@ -50,6 +50,9 @@ export function calculateItemRow(item: Partial<InvoiceItem>): InvoiceItem {
   return {
     id: item.id || 'item_' + Date.now() + Math.random().toString(36).substring(2, 6),
     productName: item.productName || '',
+    itemCode: item.itemCode,
+    huid: item.huid,
+    hallmarkingCharges: item.hallmarkingCharges,
     metalType: item.metalType || 'Gold',
     purity: item.purity || (item.metalType === 'Silver' ? 'Silver' : item.metalType === 'Platinum' ? 'Pt 950' : '22K'),
     hsnCode: item.hsnCode || (item.metalType === 'Silver' ? '711311' : '711319'),

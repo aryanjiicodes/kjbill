@@ -122,7 +122,11 @@ export const StorageService = {
 
   getSettings(): ShopSettings {
     const stored = getStored<ShopSettings>(STORAGE_KEYS.SETTINGS, defaultSettings);
-    return { ...defaultSettings, ...stored };
+    const merged = { ...defaultSettings, ...stored };
+    if (merged.accountName && /kamkhya/i.test(merged.accountName)) {
+      merged.accountName = 'KAMAKHYA JEWELLERS';
+    }
+    return merged;
   },
 
   saveSettings(settings: ShopSettings): void {

@@ -28,6 +28,25 @@ interface SheetProps {
   activeQrUrl?: string;
 }
 
+function formatPurityWithFineness(purity: string, metal: string): string {
+  const p = (purity || '').trim();
+  const m = (metal || '').toLowerCase();
+  if (m === 'gold') {
+    if (p.includes('22')) return '22K (916)';
+    if (p.includes('24')) return '24K (999)';
+    if (p.includes('18')) return '18K (750)';
+    if (p.includes('14')) return '14K (585)';
+    return p;
+  }
+  if (m === 'silver') {
+    if (p.includes('925')) return '925 (Sterling)';
+    if (p.includes('999')) return '999 (Fine)';
+    if (p.includes('800')) return '800 (Silver)';
+    return `${p} Silver`;
+  }
+  return p;
+}
+
 const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
   ({ invoice, settings, copyTitle, copySubtitle, terms, totalOtherCharges, activeQrUrl }, ref) => {
     const hasStones = invoice.items.some(
@@ -119,26 +138,44 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
 
             {/* Customer & Invoice Meta Grid */}
             <div className="grid grid-cols-12 gap-2 mb-2.5">
-              {/* Receiver / Billed To */}
+              {/* Receiver / Billed To (GST Rule 46) */}
               <div className="col-span-8 border border-stone-300 rounded-xs p-2.5 bg-white/50 print:bg-transparent">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-stone-600 border-b border-stone-200 pb-1 mb-1.5 flex justify-between items-center">
-                  <span>Details of Receiver | Billed to:</span>
+                  <span>Details of Receiver | Billed to (GST Rule 46):</span>
                   <span className="text-[9px] font-bold font-mono text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                     {copyTitle} ({copySubtitle})
                   </span>
                 </div>
                 <div className="text-sm font-bold text-stone-900">{invoice.customerName}</div>
-                <div className="text-[11px] text-stone-600 mt-0.5 whitespace-pre-line">
-                  {invoice.customerAddress || 'Counter Walk-in Customer'}
+                <div className="text-[10.5px] text-stone-700 mt-0.5 leading-snug">
+                  {invoice.customerAddress || 'Showroom Counter Handover, New Delhi'}
+                  {invoice.customerPincode ? ` - Pincode: ${invoice.customerPincode}` : ''}
                 </div>
-                <div className="text-[11px] text-stone-700 mt-1">
-                  <span className="font-semibold">Mobile:</span> +91 {invoice.customerMobile}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-stone-700 mt-1">
+                  <span>
+                    <span className="font-semibold text-stone-600">Mobile:</span> +91 {invoice.customerMobile}
+                  </span>
+                  <span>·</span>
+                  <span>
+                    <span className="font-semibold text-stone-600">State:</span> {invoice.customerState || 'Delhi'} (Code: {invoice.customerStateCode || '07'})
+                  </span>
+                  {invoice.customerPan && (
+                    <>
+                      <span>·</span>
+                      <span className="font-mono font-bold text-stone-900">
+                        <span className="font-semibold text-stone-600 font-sans">PAN:</span> {invoice.customerPan}
+                      </span>
+                    </>
+                  )}
+                  {invoice.customerGstin && (
+                    <>
+                      <span>·</span>
+                      <span className="font-bold text-stone-900">
+                        <span className="font-semibold text-stone-600">GSTIN:</span> {invoice.customerGstin}
+                      </span>
+                    </>
+                  )}
                 </div>
-                {invoice.customerGstin && (
-                  <div className="text-[11px] font-bold text-stone-900 mt-0.5">
-                    GSTIN: {invoice.customerGstin}
-                  </div>
-                )}
               </div>
 
               {/* Invoice Info */}
@@ -158,22 +195,22 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                   </div>
                   <div className="flex justify-between items-center text-[11px]">
                     <span className="font-semibold text-stone-600">Place of Supply:</span>
-                    <span className="font-medium text-stone-800">{invoice.customerState || 'Delhi'} (07)</span>
+                    <span className="font-medium text-stone-800">{invoice.customerState || 'Delhi'} (Code: {invoice.customerStateCode || '07'})</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Consignee / Shipped To Banner */}
-            <div className="border border-stone-300 rounded-xs p-1.5 mb-2.5 bg-stone-50/40 print:bg-transparent text-[11px]">
+            {/* Consignee / Shipped To Banner (Rule 46 Delivery Address) */}
+            <div className="border border-stone-300 rounded-xs p-1.5 mb-2.5 bg-stone-50/40 print:bg-transparent text-[10.5px] flex flex-wrap items-center">
               <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 mr-2">
                 Shipped / Handed over to:
               </span>
-              <span className="font-medium text-stone-900">{invoice.customerName}</span>
+              <span className="font-bold text-stone-900">{invoice.customerName}</span>
               <span className="mx-2 text-stone-300">·</span>
-              <span className="text-stone-600">{invoice.customerAddress || 'Showroom Counter Handover'}</span>
+              <span className="text-stone-700 font-medium">{invoice.deliveryAddress || invoice.customerAddress || 'Showroom Counter Handover'}</span>
               <span className="mx-2 text-stone-300">·</span>
-              <span className="font-semibold text-stone-700">State: {invoice.customerState || 'Delhi-07'}</span>
+              <span className="font-semibold text-stone-800">State: {invoice.customerState || 'Delhi'} (Code: {invoice.customerStateCode || '07'})</span>
             </div>
 
             {/* Products Table with Mkg % and Other Charges */}
@@ -219,10 +256,27 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                           {idx + 1}
                         </td>
                         <td className="py-1 px-1.5 border-r border-stone-300 font-medium text-stone-900">
-                          <div>{item.productName || `${item.metalType} Jewellery`}</div>
+                          <div className="font-bold text-stone-950">{item.productName || `${item.metalType} Jewellery`}</div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[9px]">
+                            {item.itemCode && (
+                              <span className="font-mono text-stone-700 bg-stone-100 px-1 py-0.2 rounded border border-stone-200">
+                                Tag: #{item.itemCode}
+                              </span>
+                            )}
+                            {item.huid && (
+                              <span className="font-mono font-bold text-amber-950 bg-amber-100/70 px-1 py-0.2 rounded border border-amber-300">
+                                BIS HUID: {item.huid}
+                              </span>
+                            )}
+                            {item.hallmarkingCharges && item.hallmarkingCharges > 0 ? (
+                              <span className="text-stone-500">
+                                (Hallmark Chg: ₹{item.hallmarkingCharges})
+                              </span>
+                            ) : null}
+                          </div>
                           {(item.stoneDescription || (item.stoneRate && item.stoneRate > 0) || item.stoneCharges > 0) && (
-                            <div className="text-[9px] text-stone-500 font-normal">
-                              Stone: {item.stoneDescription || 'Studded'}
+                            <div className="text-[9px] text-stone-600 font-normal mt-0.5">
+                              <span className="font-medium text-stone-700">Stone:</span> {item.stoneDescription || 'Studded'}
                               {item.stoneRate ? ` @ ₹${item.stoneRate}/g` : ''}
                             </div>
                           )}
@@ -230,8 +284,8 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                         <td className="py-1 px-1 text-center border-r border-stone-300 font-mono text-[9.5px]">
                           {item.hsnCode}
                         </td>
-                        <td className="py-1 px-1 text-center border-r border-stone-300 font-semibold">
-                          {item.purity}
+                        <td className="py-1 px-1 text-center border-r border-stone-300 font-bold text-[10px]">
+                          {formatPurityWithFineness(item.purity, item.metalType)}
                         </td>
                         <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
                           {item.grossWeight.toFixed(3)}
@@ -346,7 +400,9 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                   </div>
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">A/C Name:</span>
-                    <span className="font-bold text-stone-900">{settings.accountName || invoice.bankDetails?.accountName}</span>
+                    <span className="font-bold text-stone-900">
+                      {(settings.accountName || invoice.bankDetails?.accountName || 'KAMAKHYA JEWELLERS').replace(/kamkhya/i, 'KAMAKHYA')}
+                    </span>
                   </div>
                   <div className="flex">
                     <span className="w-18 font-semibold text-stone-600">A/C No:</span>
@@ -424,18 +480,25 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                     </span>
                   </div>
 
-                  {/* Deductions: Old Gold Return */}
+                  {/* Deductions: Old Gold Return or Trade-in Credit */}
                   {invoice.oldGoldAmount !== undefined && invoice.oldGoldAmount > 0 && (
-                    <div className="flex justify-between items-center text-amber-900 text-[10px] pt-0.5">
-                      <div>
-                        <span className="font-semibold">Less Old Gold</span>
-                        {invoice.oldGoldExchange && (
-                          <span className="block text-[8.5px] text-stone-500 font-mono">
-                            ({invoice.oldGoldExchange.grossWeight}g @ ₹{invoice.oldGoldExchange.ratePerGram}/g)
+                    <div className="flex justify-between items-start text-amber-900 text-[10px] pt-0.5">
+                      <div className="pr-1 leading-tight">
+                        <span className="font-semibold text-rose-900">
+                          {invoice.oldGoldExchange && invoice.oldGoldExchange.grossWeight > 0
+                            ? 'Less Old Gold Exchange'
+                            : `Less ${invoice.oldGoldExchange?.description || 'Trade-in Credit / Adjustment'}`}
+                        </span>
+                        {invoice.oldGoldExchange && invoice.oldGoldExchange.grossWeight > 0 && (
+                          <span className="block text-[8.5px] text-stone-600 font-mono">
+                            ({invoice.oldGoldExchange.grossWeight}g {invoice.oldGoldExchange.purity} @ ₹{invoice.oldGoldExchange.ratePerGram.toLocaleString('en-IN')}/g
+                            {invoice.oldGoldExchange.deductionPercent > 0
+                              ? ` less ${invoice.oldGoldExchange.deductionPercent}% tunch = ${invoice.oldGoldExchange.netWeight}g net`
+                              : ''})
                           </span>
                         )}
                       </div>
-                      <span className="font-mono tabular-nums font-bold text-rose-700">
+                      <span className="font-mono tabular-nums font-bold text-rose-700 whitespace-nowrap">
                         - {formatINR(invoice.oldGoldAmount)}
                       </span>
                     </div>
@@ -527,9 +590,10 @@ InvoiceSheet.displayName = 'InvoiceSheet';
 export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose }) => {
   const page1Ref = useRef<HTMLDivElement>(null);
   const page2Ref = useRef<HTMLDivElement>(null);
+  const page3Ref = useRef<HTMLDivElement>(null);
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [printTwoPages, setPrintTwoPages] = useState(true);
+  const [copyMode, setCopyMode] = useState<'2_copies' | '3_copies' | '1_copy'>('2_copies');
   const [showWhatsAppHelp, setShowWhatsAppHelp] = useState(false);
 
   // Keep body marked so background dashboard or other views NEVER print
@@ -561,7 +625,7 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
     window.print();
   };
 
-  // Helper to build a clean multi-page A4 PDF using jsPDF
+  // Helper to build a clean multi-page A4 PDF using jsPDF (Strict GST Rule 48)
   const buildInvoicePdf = async (): Promise<{ pdf: jsPDF; blob: Blob } | null> => {
     if (!page1Ref.current) return null;
 
@@ -572,24 +636,22 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
       compress: true,
     });
 
-    // Render Page 1 (Original Copy) - allowTaint removed to avoid canvas security errors on Vercel
-    const canvas1 = await html2canvas(page1Ref.current, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 1200,
-    });
+    const activeSheets: { ref: React.RefObject<HTMLDivElement | null>; name: string }[] = [
+      { ref: page1Ref, name: 'Original' },
+    ];
+    if (copyMode === '2_copies' && page2Ref.current) {
+      activeSheets.push({ ref: page2Ref, name: 'Triplicate' });
+    } else if (copyMode === '3_copies') {
+      if (page2Ref.current) activeSheets.push({ ref: page2Ref, name: 'Duplicate' });
+      if (page3Ref.current) activeSheets.push({ ref: page3Ref, name: 'Triplicate' });
+    }
 
-    const imgData1 = canvas1.toDataURL('image/jpeg', 0.95);
-    pdf.addImage(imgData1, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+    for (let i = 0; i < activeSheets.length; i++) {
+      const el = activeSheets[i].ref.current;
+      if (!el) continue;
+      if (i > 0) pdf.addPage('a4', 'portrait');
 
-    // Render Page 2 (Duplicate Copy) if 2-page print is active
-    if (printTwoPages && page2Ref.current) {
-      pdf.addPage('a4', 'portrait');
-      const canvas2 = await html2canvas(page2Ref.current, {
+      const canvas = await html2canvas(el, {
         scale: 2,
         useCORS: true,
         logging: false,
@@ -598,8 +660,8 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
         scrollY: 0,
         windowWidth: 1200,
       });
-      const imgData2 = canvas2.toDataURL('image/jpeg', 0.95);
-      pdf.addImage(imgData2, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
     }
 
     const blob = pdf.output('blob');
@@ -669,8 +731,8 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
     }
   };
 
-  // Upgraded professional terms
-  const terms = settings.termsAndConditions && settings.termsAndConditions.length > 0
+  // Upgraded professional terms with statutory BIS Assaying & Hallmarking Centre verification statement
+  const baseTerms = settings.termsAndConditions && settings.termsAndConditions.length > 0
     ? settings.termsAndConditions
     : [
         'Certified 100% BIS Hallmarked jewellery. Purity & weight guaranteed as per tax invoice.',
@@ -680,11 +742,20 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
         'Subject to local showroom jurisdiction only. E. & O.E.'
       ];
 
+  const hasAhcClause = baseTerms.some((t) => t.toLowerCase().includes('assaying') || t.toLowerCase().includes('ahc'));
+  const terms = hasAhcClause
+    ? baseTerms
+    : [
+        ...baseTerms.slice(0, 1),
+        'As per BIS guidelines, consumers may get their hallmarked jewellery tested/verified for purity at any BIS-recognised Assaying and Hallmarking Centre (AHC).',
+        ...baseTerms.slice(1),
+      ];
+
   const totalOtherCharges = invoice.items.reduce((s, i) => s + (i.otherCharges || 0), 0);
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto no-scrollbar bg-stone-900/70 backdrop-blur-xs flex flex-col items-center p-2 sm:p-4 print:static print:block print:w-full print:h-auto print:bg-white print:p-0 print:m-0 print-page-container">
-      {/* Print CSS Styles for clean 2-page A4 output without scrollbars or double-stamping */}
+      {/* Print CSS Styles for clean 2-page or 3-page A4 output without scrollbars or double-stamping */}
       <style>{`
         @media print {
           html, body {
@@ -735,21 +806,48 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
 
       {/* Floating Toolbar (Hidden when printing) */}
       <div className="sticky top-2 z-50 flex flex-wrap items-center justify-between gap-2 print:hidden bg-white/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-2xl border border-stone-200 max-w-4xl w-full mb-4">
-        {/* Left: 2 Pages Toggle */}
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-lg border border-stone-300 transition-colors text-xs font-semibold text-stone-800">
-            <input
-              type="checkbox"
-              checked={printTwoPages}
-              onChange={(e) => setPrintTwoPages(e.target.checked)}
-              className="w-4 h-4 text-amber-600 rounded focus:ring-0 cursor-pointer"
-            />
-            <Copy className="w-3.5 h-3.5 text-stone-600" />
-            <span>2 Pages (Customer + Shop Copy)</span>
-          </label>
-          <span className="text-[11px] text-stone-500 hidden sm:inline">
-            {printTwoPages ? 'Prints 2 Copies' : 'Prints 1 Copy'}
+        {/* Left: GST Rule 48 Copy Selector */}
+        <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-300 text-xs">
+          <span className="text-[11px] font-bold text-stone-700 px-1.5 flex items-center gap-1">
+            <Copy className="w-3.5 h-3.5 text-stone-500" />
+            <span className="hidden sm:inline">GST Rule 48:</span>
           </span>
+          <button
+            type="button"
+            onClick={() => setCopyMode('2_copies')}
+            className={`px-2.5 py-1 rounded-lg font-semibold transition-all text-xs ${
+              copyMode === '2_copies'
+                ? 'bg-white text-stone-900 shadow-xs border border-stone-300 font-bold'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+            title="Customer Copy + Supplier Showroom Copy"
+          >
+            2 Copies (Retail)
+          </button>
+          <button
+            type="button"
+            onClick={() => setCopyMode('3_copies')}
+            className={`px-2.5 py-1 rounded-lg font-semibold transition-all text-xs ${
+              copyMode === '3_copies'
+                ? 'bg-amber-600 text-white shadow-xs font-bold'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+            title="Full GST Rule 48 Triplicate Set: Recipient + Transporter + Supplier"
+          >
+            3 Copies (Rule 48)
+          </button>
+          <button
+            type="button"
+            onClick={() => setCopyMode('1_copy')}
+            className={`px-2 py-1 rounded-lg font-semibold transition-all text-xs ${
+              copyMode === '1_copy'
+                ? 'bg-white text-stone-900 shadow-xs border border-stone-300 font-bold'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+            title="Recipient Original Copy Only"
+          >
+            1 Copy
+          </button>
         </div>
 
         {/* Right Actions */}
@@ -870,20 +968,53 @@ export const InvoicePrintModal: React.FC<Props> = ({ invoice, settings, onClose 
         />
       </div>
 
-      {/* Sheet 2: DUPLICATE FOR SUPPLIER (SHOP COPY) */}
-      {printTwoPages && (
+      {/* For 2 Copies Mode: Sheet 2 is TRIPLICATE FOR SUPPLIER (GST Rule 48(1)(c)) */}
+      {copyMode === '2_copies' && (
         <div className="w-full flex flex-col items-center mb-6 print:m-0 print:p-0 print:block print-break-page">
           <InvoiceSheet
             ref={page2Ref}
             invoice={invoice}
             settings={settings}
-            copyTitle="DUPLICATE FOR SUPPLIER"
-            copySubtitle="OFFICE / STORE COPY"
+            copyTitle="TRIPLICATE FOR SUPPLIER"
+            copySubtitle="SUPPLIER / SHOWROOM COPY (GST RULE 48)"
             terms={terms}
             totalOtherCharges={totalOtherCharges}
             activeQrUrl={activeQrUrl}
           />
         </div>
+      )}
+
+      {/* For 3 Copies Mode: Full GST Rule 48 Set */}
+      {copyMode === '3_copies' && (
+        <>
+          {/* Sheet 2: DUPLICATE FOR TRANSPORTER (GST Rule 48(1)(b)) */}
+          <div className="w-full flex flex-col items-center mb-6 print:m-0 print:p-0 print:block print-break-page">
+            <InvoiceSheet
+              ref={page2Ref}
+              invoice={invoice}
+              settings={settings}
+              copyTitle="DUPLICATE FOR TRANSPORTER"
+              copySubtitle="TRANSPORTER COPY (GST RULE 48)"
+              terms={terms}
+              totalOtherCharges={totalOtherCharges}
+              activeQrUrl={activeQrUrl}
+            />
+          </div>
+
+          {/* Sheet 3: TRIPLICATE FOR SUPPLIER (GST Rule 48(1)(c)) */}
+          <div className="w-full flex flex-col items-center mb-6 print:m-0 print:p-0 print:block print-break-page">
+            <InvoiceSheet
+              ref={page3Ref}
+              invoice={invoice}
+              settings={settings}
+              copyTitle="TRIPLICATE FOR SUPPLIER"
+              copySubtitle="SUPPLIER / SHOWROOM COPY (GST RULE 48)"
+              terms={terms}
+              totalOtherCharges={totalOtherCharges}
+              activeQrUrl={activeQrUrl}
+            />
+          </div>
+        </>
       )}
     </div>
   );

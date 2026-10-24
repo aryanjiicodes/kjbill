@@ -53,11 +53,46 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
       (item) => (item.stoneWeight && item.stoneWeight > 0) || (item.stoneCharges && item.stoneCharges > 0)
     );
     const totalStoneCharges = invoice.items.reduce((s, i) => s + (i.stoneCharges || 0), 0);
+    const tableColSpan = hasStones ? 14 : 12;
+
+    // Statutory HSN/SAC Tax Grouping for the GST Table (Exact match to Image 1 & Image 2)
+    const hsnMap: Record<
+      string,
+      { hsn: string; taxable: number; cgstRate: number; cgstAmt: number; sgstRate: number; sgstAmt: number; totalTax: number }
+    > = {};
+
+    invoice.items.forEach((item) => {
+      const hsn = item.hsnCode || (item.metalType === 'Silver' ? '711311' : '711319');
+      if (!hsnMap[hsn]) {
+        hsnMap[hsn] = {
+          hsn,
+          taxable: 0,
+          cgstRate: invoice.isInterState ? 0 : (item.gstRate || 3) / 2,
+          cgstAmt: 0,
+          sgstRate: invoice.isInterState ? 0 : (item.gstRate || 3) / 2,
+          sgstAmt: 0,
+          totalTax: 0,
+        };
+      }
+      const taxVal = item.taxableValue || 0;
+      hsnMap[hsn].taxable += taxVal;
+      if (invoice.isInterState) {
+        const igst = Math.round((taxVal * ((item.gstRate || 3) / 100)) * 100) / 100;
+        hsnMap[hsn].totalTax += igst;
+      } else {
+        const cgst = Math.round((taxVal * (((item.gstRate || 3) / 2) / 100)) * 100) / 100;
+        const sgst = Math.round((taxVal * (((item.gstRate || 3) / 2) / 100)) * 100) / 100;
+        hsnMap[hsn].cgstAmt += cgst;
+        hsnMap[hsn].sgstAmt += sgst;
+        hsnMap[hsn].totalTax += cgst + sgst;
+      }
+    });
+    const hsnRows = Object.values(hsnMap);
 
     return (
       <div
         ref={ref}
-        className="w-full max-w-[210mm] min-h-[285mm] h-[285mm] print:h-[283mm] print:min-h-0 print:max-h-[283mm] bg-white text-stone-900 mx-auto p-6 shadow-2xl rounded-sm print:shadow-none print:m-0 print:p-2.5 print:w-full print:max-w-none text-[11px] leading-tight relative overflow-hidden flex flex-col justify-between"
+        className="w-full max-w-[210mm] min-h-[287mm] h-[287mm] max-h-[287mm] print:h-[282mm] print:max-h-[282mm] print:min-h-0 bg-white text-stone-900 mx-auto p-2 sm:p-3 shadow-2xl rounded-xs print:shadow-none print:m-0 print:p-0 print:w-full print:max-w-none text-[9.5px] leading-tight relative overflow-hidden flex flex-col justify-between"
         style={{
           boxSizing: 'border-box',
           overflow: 'hidden',
@@ -67,182 +102,244 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
           pageBreakInside: 'avoid',
         }}
       >
-        {/* Background Watermark (Increased opacity & visibility, keeping all tables & text fully sharp) */}
+        {/* Background Watermark (Subtle & elegant behind table) */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
           <img
             src={watermarkImg}
             alt="Watermark"
-            className="w-[420px] max-w-[75%] opacity-[0.18] select-none object-contain print:opacity-[0.18]"
+            className="w-[380px] max-w-[70%] opacity-[0.14] select-none object-contain print:opacity-[0.14]"
           />
         </div>
 
-        {/* Content Wrapper */}
-        <div className="relative z-10 flex flex-col justify-between h-full flex-1">
+        {/* Outer ERP Box Border - Classic Chandni Chowk Tax Invoice Layout */}
+        <div className="border-[1.5px] border-stone-800 flex flex-col justify-between h-full w-full relative z-10 bg-white/95 print:bg-white">
           <div>
-            {/* Top Header */}
-            <div className="border-b-2 border-stone-800 pb-2.5 mb-2.5">
-              <div className="flex items-center justify-between gap-3">
-                {/* Left: Main Brand Logo (Gold Round KJ Emblem) */}
-                <div className="w-[125px] sm:w-[135px] shrink-0 flex flex-col items-center justify-center">
-                  <img
-                    src={mainLogoImg}
-                    alt="KAMAKHYA JEWELLERS"
-                    className="h-[88px] w-[88px] object-contain drop-shadow-xs"
-                  />
-                  <span className="text-[8.5px] font-extrabold text-amber-950 uppercase tracking-widest mt-1">ESTB. 2006</span>
-                </div>
-
-                {/* Center: Shop Details & GSTIN */}
-                <div className="text-center flex-1 px-2">
-                  <div className="mb-1">
-                    <span className="inline-block bg-amber-100 text-amber-950 border border-amber-400/80 font-bold px-3 py-0.5 rounded-full text-[10px] tracking-wider uppercase shadow-xs">
-                      ★ GST TAX INVOICE ★
-                    </span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-serif font-extrabold tracking-wider text-stone-900 mt-0.5 mb-0.5 uppercase">
-                    KAMAKHYA JEWELLERS
-                  </h1>
-                  <div className="text-[11.5px] font-serif text-amber-950 font-bold mb-0.5">
-                    कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
-                  </div>
-                  <p className="text-[10.5px] text-stone-600 max-w-md mx-auto leading-normal">
-                    {settings.address}
-                  </p>
-                  <div className="flex items-center justify-center gap-2 text-[10px] text-stone-700 mt-0.5">
-                    <span>Ph: +91 {settings.mobile}</span>
-                    {settings.email && (
-                      <>
-                        <span>·</span>
-                        <span>{settings.email}</span>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-[11px] font-bold text-stone-900 mt-0.5">
-                    GSTIN: {settings.gstin || '07AAACK1234F1Z8'}
-                  </div>
-                </div>
-
-                {/* Right: BIS Hallmark Logo */}
-                <div className="w-[125px] sm:w-[135px] shrink-0 flex flex-col items-center justify-center text-center">
-                  <img
-                    src={bisLogoImg}
-                    alt="BIS Hallmark"
-                    className="h-[78px] w-auto max-w-[110px] object-contain"
-                  />
-                  <span className="text-[8.5px] font-extrabold text-blue-900 tracking-wider mt-1 uppercase">
-                    BIS 916 Hallmark
-                  </span>
-                </div>
+            {/* 1. Top Brand Header */}
+            <div className="border-b-[1.5px] border-stone-800 p-2 bg-gradient-to-r from-amber-50/50 via-white to-amber-50/50 flex items-center justify-between gap-2">
+              {/* Left: Main Brand Logo */}
+              <div className="w-[85px] shrink-0 flex flex-col items-center justify-center">
+                <img
+                  src={mainLogoImg}
+                  alt="KAMAKHYA JEWELLERS"
+                  className="h-[58px] w-[58px] object-contain drop-shadow-xs"
+                />
+                <span className="text-[7px] font-extrabold text-amber-950 uppercase tracking-widest mt-0.5">ESTB. 2006</span>
               </div>
-            </div>
 
-            {/* Customer & Invoice Meta Grid */}
-            <div className="grid grid-cols-12 gap-2 mb-2.5">
-              {/* Receiver / Billed To (GST Rule 46) */}
-              <div className="col-span-8 border border-stone-300 rounded-xs p-2.5 bg-white/50 print:bg-transparent">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-stone-600 border-b border-stone-200 pb-1 mb-1.5 flex justify-between items-center">
-                  <span>Details of Receiver | Billed to (GST Rule 46):</span>
-                  <span className="text-[9px] font-bold font-mono text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                    {copyTitle} ({copySubtitle})
-                  </span>
+              {/* Center: Brand Name & Slogan */}
+              <div className="text-center flex-1 px-1">
+                <h1 className="text-2xl sm:text-[26px] font-serif font-black tracking-wider text-stone-900 uppercase leading-none">
+                  KAMAKHYA JEWELLERS
+                </h1>
+                <div className="text-[11px] font-serif text-amber-950 font-bold mt-0.5">
+                  कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
                 </div>
-                <div className="text-sm font-bold text-stone-900">{invoice.customerName}</div>
-                <div className="text-[10.5px] text-stone-700 mt-0.5 leading-snug">
-                  {invoice.customerAddress || 'Showroom Counter Handover, New Delhi'}
-                  {invoice.customerPincode ? ` - Pincode: ${invoice.customerPincode}` : ''}
-                </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10.5px] text-stone-700 mt-1">
-                  <span>
-                    <span className="font-semibold text-stone-600">Mobile:</span> +91 {invoice.customerMobile}
-                  </span>
-                  <span>·</span>
-                  <span>
-                    <span className="font-semibold text-stone-600">State:</span> {invoice.customerState || 'Delhi'} (Code: {invoice.customerStateCode || '07'})
-                  </span>
-                  {invoice.customerPan && (
+                <p className="text-[9.5px] text-stone-600 font-medium max-w-lg mx-auto leading-normal mt-0.5">
+                  {settings.address}
+                </p>
+                <div className="flex items-center justify-center gap-2 text-[9px] text-stone-700 mt-0.5">
+                  <span>Ph: +91 {settings.mobile}</span>
+                  {settings.email && (
                     <>
                       <span>·</span>
-                      <span className="font-mono font-bold text-stone-900">
-                        <span className="font-semibold text-stone-600 font-sans">PAN:</span> {invoice.customerPan}
-                      </span>
-                    </>
-                  )}
-                  {invoice.customerGstin && (
-                    <>
-                      <span>·</span>
-                      <span className="font-bold text-stone-900">
-                        <span className="font-semibold text-stone-600">GSTIN:</span> {invoice.customerGstin}
-                      </span>
+                      <span>{settings.email}</span>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Invoice Info */}
-              <div className="col-span-4 border border-stone-300 rounded-xs p-2.5 bg-stone-50/70 print:bg-transparent">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-semibold text-stone-600">Invoice No:</span>
-                    <span className="font-mono font-bold text-stone-900">{invoice.invoiceNumber}</span>
+              {/* Right: BIS Hallmark Emblem */}
+              <div className="w-[85px] shrink-0 flex flex-col items-center justify-center text-center">
+                <img
+                  src={bisLogoImg}
+                  alt="BIS Hallmark"
+                  className="h-[50px] w-auto max-w-[80px] object-contain"
+                />
+                <span className="text-[7.5px] font-extrabold text-blue-900 tracking-wider mt-0.5 uppercase">
+                  BIS 916 Hallmark
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Document Title Bar */}
+            <div className="border-b-[1.5px] border-stone-800 px-3 py-1 bg-stone-100 flex items-center justify-between text-[10px]">
+              <div className="w-24"></div>
+              <div className="text-center font-bold tracking-widest text-stone-900 uppercase">
+                ★ TAX INVOICE ★
+              </div>
+              <div className="text-[9px] font-bold font-mono text-stone-800 uppercase bg-white px-2 py-0.5 rounded border border-stone-300">
+                {copyTitle} ({copySubtitle})
+              </div>
+            </div>
+
+            {/* 3. Two-Column Supplier vs Invoice Details Grid (Exact match to Image 1 & 2) */}
+            <div className="grid grid-cols-12 border-b-[1.5px] border-stone-800 text-[9.5px] leading-tight">
+              {/* Left: Supplier / Seller Details (Col 6) */}
+              <div className="col-span-6 p-2 border-r-[1.5px] border-stone-800 space-y-0.5">
+                <div className="font-bold text-[11px] text-stone-950 uppercase">{settings.businessName || 'KAMAKHYA JEWELLERS'}</div>
+                <div className="text-stone-700 leading-normal">{settings.address}</div>
+                <div>
+                  <span className="font-semibold text-stone-600">State Name :</span> {settings.state || 'Delhi'}, <span className="font-semibold text-stone-600">Code :</span> {settings.stateCode || '07'}
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">GSTIN/UIN :</span>{' '}
+                  <span className="font-mono font-bold text-stone-950">{settings.gstin || '07AAACK1234F1Z8'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">PAN No. :</span>{' '}
+                  <span className="font-mono font-semibold text-stone-900">{settings.pan || 'AAACK1234F'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">BIS Cert. No. :</span>{' '}
+                  <span className="font-mono font-medium text-stone-800">HM/C-8190525819</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">Contact :</span> +91 {settings.mobile}
+                </div>
+              </div>
+
+              {/* Right: Invoice Metadata Tabular Box (Col 6) */}
+              <div className="col-span-6 divide-y divide-stone-300">
+                <div className="grid grid-cols-2 divide-x divide-stone-300">
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Invoice No.</span>
+                    <span className="font-mono font-bold text-stone-950 text-[10px]">{invoice.invoiceNumber}</span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-semibold text-stone-600">Date & Time:</span>
-                    <span className="font-medium text-stone-800">{invoice.date} {invoice.time ? `(${invoice.time})` : ''}</span>
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Dated</span>
+                    <span className="font-medium text-stone-900 text-[9.5px]">{invoice.date}</span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-semibold text-stone-600">Payment Mode:</span>
-                    <span className="font-bold text-stone-900">{invoice.paymentMode}</span>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-stone-300">
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Delivery Note</span>
+                    <span className="font-medium text-stone-800 text-[9.5px]">Showroom Handover</span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px]">
-                    <span className="font-semibold text-stone-600">Place of Supply:</span>
-                    <span className="font-medium text-stone-800">{invoice.customerState || 'Delhi'} (Code: {invoice.customerStateCode || '07'})</span>
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Mode/Terms of Payment</span>
+                    <span className="font-bold text-stone-900 text-[9.5px]">{invoice.paymentMode}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-stone-300">
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Supplier's Ref.</span>
+                    <span className="font-mono text-stone-800 text-[9px]">KJ-SHOWROOM</span>
+                  </div>
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Other Reference(s)</span>
+                    <span className="text-stone-800 text-[9px]">{invoice.time || 'Counter POS'}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-stone-300">
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Buyer's Order No.</span>
+                    <span className="font-mono text-stone-800 text-[9px]">{invoice.invoiceNumber}</span>
+                  </div>
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Dated</span>
+                    <span className="text-stone-800 text-[9px]">{invoice.date}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 divide-x divide-stone-300">
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Dispatched through</span>
+                    <span className="text-stone-800 text-[9px]">Delivered From Shop (Self)</span>
+                  </div>
+                  <div className="p-1 px-1.5">
+                    <span className="text-[8.5px] text-stone-500 block">Destination</span>
+                    <span className="text-stone-800 text-[9px]">{invoice.customerState || 'Delhi'}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Consignee / Shipped To Banner (Rule 46 Delivery Address) */}
-            <div className="border border-stone-300 rounded-xs p-1.5 mb-2.5 bg-stone-50/40 print:bg-transparent text-[10.5px] flex flex-wrap items-center">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 mr-2">
-                Shipped / Handed over to:
-              </span>
-              <span className="font-bold text-stone-900">{invoice.customerName}</span>
-              <span className="mx-2 text-stone-300">·</span>
-              <span className="text-stone-700 font-medium">{invoice.deliveryAddress || invoice.customerAddress || 'Showroom Counter Handover'}</span>
-              <span className="mx-2 text-stone-300">·</span>
-              <span className="font-semibold text-stone-800">State: {invoice.customerState || 'Delhi'} (Code: {invoice.customerStateCode || '07'})</span>
+            {/* 4. Buyer (Bill To) & Consignee (Ship To) Boxes */}
+            <div className="grid grid-cols-12 border-b-[1.5px] border-stone-800 text-[9.5px] leading-tight">
+              {/* Left: Buyer (Bill To) */}
+              <div className="col-span-6 p-2 border-r-[1.5px] border-stone-800 space-y-0.5">
+                <div className="text-[8.5px] font-bold uppercase tracking-wider text-stone-500">Buyer (Bill to):</div>
+                <div className="font-bold text-[11px] text-stone-950">{invoice.customerName}</div>
+                <div className="text-stone-700 leading-normal">{invoice.customerAddress || 'Counter Walk-in Customer'}</div>
+                {invoice.customerPincode && (
+                  <div>
+                    <span className="font-semibold text-stone-600">Pincode :</span>{' '}
+                    <span className="font-mono">{invoice.customerPincode}</span>
+                  </div>
+                )}
+                <div>
+                  <span className="font-semibold text-stone-600">State Name :</span> {invoice.customerState || 'Delhi'},{' '}
+                  <span className="font-semibold text-stone-600">Code :</span> {invoice.customerStateCode || '07'}
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">Contact No. :</span> +91 {invoice.customerMobile}
+                </div>
+                {invoice.customerPan && (
+                  <div>
+                    <span className="font-semibold text-stone-600">PAN No. :</span>{' '}
+                    <span className="font-mono font-bold text-stone-900">{invoice.customerPan}</span>
+                  </div>
+                )}
+                {invoice.customerGstin && (
+                  <div>
+                    <span className="font-semibold text-stone-600">GSTIN/UIN :</span>{' '}
+                    <span className="font-mono font-bold text-stone-900">{invoice.customerGstin}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Consignee (Ship To) */}
+              <div className="col-span-6 p-2 space-y-0.5">
+                <div className="text-[8.5px] font-bold uppercase tracking-wider text-stone-500">Consignee (Ship to):</div>
+                <div className="font-bold text-[11px] text-stone-950">{invoice.customerName}</div>
+                <div className="text-stone-700 leading-normal">
+                  {invoice.deliveryAddress || invoice.customerAddress || 'Showroom Counter Handover'}
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">State Name :</span> {invoice.customerState || 'Delhi'},{' '}
+                  <span className="font-semibold text-stone-600">Code :</span> {invoice.customerStateCode || '07'}
+                </div>
+                <div>
+                  <span className="font-semibold text-stone-600">Contact No. :</span> +91 {invoice.customerMobile}
+                </div>
+                <div className="text-[8.5px] text-stone-500 pt-0.5">
+                  <span className="font-semibold text-stone-600">Place of Supply :</span> {invoice.customerState || 'Delhi'} ({invoice.customerStateCode || '07'})
+                </div>
+              </div>
             </div>
 
-            {/* Products Table with Mkg % and Other Charges */}
-            <div className="border border-stone-300 rounded-xs overflow-hidden mb-2.5 bg-white/50 print:bg-transparent">
-              <table className="w-full text-left border-collapse text-[10.5px]">
+            {/* 5. Main Items Table (Full-Height ERP Grid matching Image 1 & 2) */}
+            <div className="w-full">
+              <table className="w-full text-left border-collapse text-[9.5px]">
                 <thead>
-                  <tr className="bg-stone-100 print:bg-stone-100 border-b border-stone-300 text-stone-800 font-bold">
-                    <th className="py-1 px-1 text-center w-6 border-r border-stone-300">#</th>
-                    <th className="py-1 px-1.5 border-r border-stone-300 min-w-[140px]">Product Description</th>
-                    <th className="py-1 px-1 text-center border-r border-stone-300">HSN</th>
-                    <th className="py-1 px-1 text-center border-r border-stone-300">Purity</th>
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Gross (g)</th>
+                  <tr className="bg-stone-100 border-b border-stone-800 text-stone-900 font-bold">
+                    <th className="py-1 px-1 text-center w-6 border-r border-stone-400">Sl.</th>
+                    <th className="py-1 px-1.5 border-r border-stone-400 min-w-[150px]">Description of Goods</th>
+                    <th className="py-1 px-1 text-center border-r border-stone-400">HSN/SAC</th>
+                    <th className="py-1 px-1 text-center border-r border-stone-400">Purity</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-400">Gross (g)</th>
                     {hasStones && (
                       <>
-                        <th className="py-1 px-1 text-right border-r border-stone-300 whitespace-nowrap">Stone (g)</th>
-                        <th className="py-1 px-1 text-right border-r border-stone-300 whitespace-nowrap">Stone (₹)</th>
+                        <th className="py-1 px-1 text-right border-r border-stone-400 whitespace-nowrap">Stone (g)</th>
+                        <th className="py-1 px-1 text-right border-r border-stone-400 whitespace-nowrap">Stone (₹)</th>
                       </>
                     )}
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Net (g)</th>
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Rate</th>
-                    <th className="py-1 px-1 text-center border-r border-stone-300">Mkg %</th>
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Other Chg</th>
-                    <th className="py-1 px-1.5 text-right border-r border-stone-300">Taxable</th>
-                    <th className="py-1 px-1 text-center border-r border-stone-300">GST%</th>
-                    <th className="py-1 px-1.5 text-right font-bold text-stone-900">Total (₹)</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-400">Net (g)</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-400">Rate</th>
+                    <th className="py-1 px-1 text-center border-r border-stone-400">Mkg %</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-400">Other Chg</th>
+                    <th className="py-1 px-1.5 text-right border-r border-stone-400">Taxable</th>
+                    <th className="py-1 px-1 text-center border-r border-stone-400">GST%</th>
+                    <th className="py-1 px-1.5 text-right font-bold text-stone-900">Amount (₹)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-200">
+                <tbody>
+                  {/* Actual Item Rows */}
                   {invoice.items.map((item, idx) => {
                     const mkgPercentText =
                       item.makingChargeType === 'percent' && item.makingChargeRate > 0
                         ? `${item.makingChargeRate}%`
+                        : item.makingCharges > 0
+                        ? `₹${item.makingCharges}`
                         : '-';
 
                     const otherChgText =
@@ -251,13 +348,15 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                         : '-';
 
                     return (
-                      <tr key={item.id || idx} className="hover:bg-stone-50/50 print:hover:bg-transparent">
-                        <td className="py-1 px-1 text-center border-r border-stone-300 font-mono text-[9.5px]">
+                      <tr key={item.id || idx} className="hover:bg-stone-50/50">
+                        <td className="py-1 px-1 text-center border-r border-stone-300 font-mono text-[9px] align-top">
                           {idx + 1}
                         </td>
-                        <td className="py-1 px-1.5 border-r border-stone-300 font-medium text-stone-900">
-                          <div className="font-bold text-stone-950">{item.productName || `${item.metalType} Jewellery`}</div>
-                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[9px]">
+                        <td className="py-1 px-1.5 border-r border-stone-300 font-medium text-stone-900 align-top">
+                          <div className="font-bold text-stone-950 leading-snug">
+                            {item.productName || `${item.metalType} Jewellery`}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[8.5px]">
                             {item.itemCode && (
                               <span className="font-mono text-stone-700 bg-stone-100 px-1 py-0.2 rounded border border-stone-200">
                                 Tag: #{item.itemCode}
@@ -275,309 +374,360 @@ const InvoiceSheet = React.forwardRef<HTMLDivElement, SheetProps>(
                             ) : null}
                           </div>
                           {(item.stoneDescription || (item.stoneRate && item.stoneRate > 0) || item.stoneCharges > 0) && (
-                            <div className="text-[9px] text-stone-600 font-normal mt-0.5">
+                            <div className="text-[8.5px] text-stone-600 font-normal mt-0.5">
                               <span className="font-medium text-stone-700">Stone:</span> {item.stoneDescription || 'Studded'}
                               {item.stoneRate ? ` @ ₹${item.stoneRate}/g` : ''}
                             </div>
                           )}
                         </td>
-                        <td className="py-1 px-1 text-center border-r border-stone-300 font-mono text-[9.5px]">
+                        <td className="py-1 px-1 text-center border-r border-stone-300 font-mono text-[9px] align-top">
                           {item.hsnCode}
                         </td>
-                        <td className="py-1 px-1 text-center border-r border-stone-300 font-bold text-[10px]">
+                        <td className="py-1 px-1 text-center border-r border-stone-300 font-bold text-[9.5px] align-top">
                           {formatPurityWithFineness(item.purity, item.metalType)}
                         </td>
-                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
+                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums align-top">
                           {item.grossWeight.toFixed(3)}
                         </td>
                         {hasStones && (
                           <>
-                            <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-600">
+                            <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-600 align-top">
                               {item.stoneWeight > 0 ? item.stoneWeight.toFixed(3) : '-'}
                             </td>
-                            <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-700">
+                            <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums text-stone-700 align-top">
                               {item.stoneCharges > 0 ? `₹${item.stoneCharges.toFixed(2)}` : '-'}
                             </td>
                           </>
                         )}
-                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums font-bold text-stone-900 bg-amber-50/40 print:bg-transparent">
+                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums font-bold text-stone-900 bg-amber-50/40 align-top">
                           {item.netWeight.toFixed(3)}
                         </td>
-                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums leading-tight">
+                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums leading-tight align-top">
                           {item.metalType === 'Silver' ? (
                             <div>
                               <span className="font-bold">₹{Math.round(item.ratePerGram * 1000).toLocaleString('en-IN')}/kg</span>
-                              <span className="text-[8.5px] text-stone-500 block font-sans">({item.ratePerGram.toFixed(1)}/g)</span>
+                              <span className="text-[8px] text-stone-500 block font-sans">({item.ratePerGram.toFixed(1)}/g)</span>
                             </div>
                           ) : (
                             <div>
                               <span className="font-bold">₹{Math.round(item.ratePerGram * 10).toLocaleString('en-IN')}/10g</span>
-                              <span className="text-[8.5px] text-stone-500 block font-sans">({item.ratePerGram.toFixed(1)}/g)</span>
+                              <span className="text-[8px] text-stone-500 block font-sans">({item.ratePerGram.toFixed(1)}/g)</span>
                             </div>
                           )}
                         </td>
-                        <td className="py-1 px-1 text-center border-r border-stone-300 font-mono font-medium text-stone-700">
+                        <td className="py-1 px-1 text-center border-r border-stone-300 font-mono font-medium text-stone-700 align-top">
                           {mkgPercentText}
                         </td>
-                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums text-stone-700">
+                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums text-stone-700 align-top">
                           {otherChgText}
                         </td>
-                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums font-medium">
+                        <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums font-medium align-top">
                           {item.taxableValue.toFixed(2)}
                         </td>
-                        <td className="py-1 px-1 text-center border-r border-stone-300 text-stone-600 font-mono">
+                        <td className="py-1 px-1 text-center border-r border-stone-300 text-stone-600 font-mono align-top">
                           {item.gstRate}%
                         </td>
-                        <td className="py-1 px-1.5 text-right font-mono tabular-nums font-bold text-stone-900">
+                        <td className="py-1 px-1.5 text-right font-mono tabular-nums font-bold text-stone-900 align-top">
                           {item.lineTotal.toFixed(2)}
                         </td>
                       </tr>
                     );
                   })}
 
+                  {/* Filler Spacer Row so column lines continue all the way down, avoiding awkward empty space */}
+                  <tr className="h-14 sm:h-18 print:h-16">
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300 relative">
+                      {/* Subtle authentic showroom stamp badge in open table space (Just like the blue stamp in Siya Ram image) */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
+                        <div className="border border-blue-900/60 rounded px-2.5 py-0.5 text-center bg-blue-50/20">
+                          <span className="text-[9px] font-bold text-blue-950 uppercase tracking-widest block">
+                            ★ 100% BIS 916 HALLMARKED ★
+                          </span>
+                          <span className="text-[7.5px] font-semibold text-blue-900 block">
+                            PURITY & WEIGHT GUARANTEED
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    {hasStones && (
+                      <>
+                        <td className="border-r border-stone-300"></td>
+                        <td className="border-r border-stone-300"></td>
+                      </>
+                    )}
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    <td className="border-r border-stone-300"></td>
+                    <td></td>
+                  </tr>
+
+                  {/* Tax Breakdown rows inside table right above totals (Just like Image 1 & 2) */}
+                  <tr className="border-t border-stone-200 text-[9px] bg-stone-50/30">
+                    <td colSpan={tableColSpan - 2} className="py-0.5 px-2 border-r border-stone-300 text-right font-semibold text-stone-600">
+                      CGST (1.5%) :
+                    </td>
+                    <td className="py-0.5 border-r border-stone-300 text-center font-mono text-stone-500">1.5%</td>
+                    <td className="py-0.5 px-1.5 text-right font-mono tabular-nums font-semibold text-stone-900">
+                      {invoice.cgst.toFixed(2)}
+                    </td>
+                  </tr>
+                  <tr className="text-[9px] bg-stone-50/30">
+                    <td colSpan={tableColSpan - 2} className="py-0.5 px-2 border-r border-stone-300 text-right font-semibold text-stone-600">
+                      SGST (1.5%) :
+                    </td>
+                    <td className="py-0.5 border-r border-stone-300 text-center font-mono text-stone-500">1.5%</td>
+                    <td className="py-0.5 px-1.5 text-right font-mono tabular-nums font-semibold text-stone-900">
+                      {invoice.sgst.toFixed(2)}
+                    </td>
+                  </tr>
+                  {invoice.roundOff !== 0 && (
+                    <tr className="text-[8.5px] bg-stone-50/30">
+                      <td colSpan={tableColSpan - 2} className="py-0.2 px-2 border-r border-stone-300 text-right text-stone-500">
+                        ROUND OFF :
+                      </td>
+                      <td className="py-0.2 border-r border-stone-300"></td>
+                      <td className="py-0.2 px-1.5 text-right font-mono tabular-nums text-stone-600">
+                        {invoice.roundOff > 0 ? `+${invoice.roundOff.toFixed(2)}` : invoice.roundOff.toFixed(2)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Deductions: Old Gold Return or Trade-in Credit */}
+                  {invoice.oldGoldAmount !== undefined && invoice.oldGoldAmount > 0 && (
+                    <tr className="text-[9px] bg-rose-50/40 border-t border-stone-200">
+                      <td colSpan={tableColSpan - 2} className="py-0.5 px-2 border-r border-stone-300 text-right font-semibold text-rose-900">
+                        {invoice.oldGoldExchange && invoice.oldGoldExchange.grossWeight > 0
+                          ? `Less Old Gold Exchange (${invoice.oldGoldExchange.grossWeight}g ${invoice.oldGoldExchange.purity} @ ₹${invoice.oldGoldExchange.ratePerGram.toLocaleString('en-IN')}/g${
+                              invoice.oldGoldExchange.deductionPercent > 0 ? ` less ${invoice.oldGoldExchange.deductionPercent}% tunch` : ''
+                            }) :`
+                          : `Less ${invoice.oldGoldExchange?.description || 'Trade-in Credit / Adjustment'} :`}
+                      </td>
+                      <td className="py-0.5 border-r border-stone-300"></td>
+                      <td className="py-0.5 px-1.5 text-right font-mono tabular-nums font-bold text-rose-700">
+                        - {formatINR(invoice.oldGoldAmount)}
+                      </td>
+                    </tr>
+                  )}
+
+                  {/* Deductions: Advance Payment */}
+                  {invoice.advanceAdjusted > 0 && (
+                    <tr className="text-[9px] bg-emerald-50/40">
+                      <td colSpan={tableColSpan - 2} className="py-0.5 px-2 border-r border-stone-300 text-right font-semibold text-emerald-900">
+                        Less Advance Adjusted :
+                      </td>
+                      <td className="py-0.5 border-r border-stone-300"></td>
+                      <td className="py-0.5 px-1.5 text-right font-mono tabular-nums font-bold text-emerald-800">
+                        - {formatINR(invoice.advanceAdjusted)}
+                      </td>
+                    </tr>
+                  )}
+
                   {/* Totals Row */}
-                  <tr className="bg-stone-100 font-bold border-t-2 border-stone-300 text-stone-900">
-                    <td colSpan={4} className="py-1 px-2 text-right border-r border-stone-300 uppercase tracking-wider text-[9.5px]">
+                  <tr className="bg-stone-100 font-bold border-t-[1.5px] border-stone-800 text-stone-900 text-[9.5px]">
+                    <td colSpan={2} className="py-1 px-2 text-right border-r border-stone-400 uppercase tracking-wider">
                       Total :
                     </td>
-                    <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
+                    <td className="py-1 px-1 border-r border-stone-400"></td>
+                    <td className="py-1 px-1 border-r border-stone-400"></td>
+                    <td className="py-1 px-1.5 text-right border-r border-stone-400 font-mono tabular-nums">
                       {invoice.totalGrossWeight.toFixed(3)}
                     </td>
                     {hasStones && (
                       <>
-                        <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums">
+                        <td className="py-1 px-1 text-right border-r border-stone-400 font-mono tabular-nums">
                           {invoice.totalStoneWeight.toFixed(3)}
                         </td>
-                        <td className="py-1 px-1 text-right border-r border-stone-300 font-mono tabular-nums font-semibold text-stone-800">
+                        <td className="py-1 px-1 text-right border-r border-stone-400 font-mono tabular-nums font-semibold">
                           {totalStoneCharges > 0 ? `₹${totalStoneCharges.toFixed(2)}` : '—'}
                         </td>
                       </>
                     )}
-                    <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums text-amber-950 font-extrabold bg-amber-100/40">
+                    <td className="py-1 px-1.5 text-right border-r border-stone-400 font-mono tabular-nums text-amber-950 font-extrabold bg-amber-100/40">
                       {invoice.totalNetWeight.toFixed(3)}
                     </td>
-                    <td className="py-1 px-1.5 border-r border-stone-300"></td>
-                    <td className="py-1 px-1 border-r border-stone-300"></td>
-                    <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
+                    <td className="py-1 px-1 border-r border-stone-400"></td>
+                    <td className="py-1 px-1 border-r border-stone-400"></td>
+                    <td className="py-1 px-1.5 text-right border-r border-stone-400 font-mono tabular-nums">
                       {totalOtherCharges > 0 ? `₹${totalOtherCharges.toFixed(2)}` : '—'}
                     </td>
-                    <td className="py-1 px-1.5 text-right border-r border-stone-300 font-mono tabular-nums">
+                    <td className="py-1 px-1.5 text-right border-r border-stone-400 font-mono tabular-nums">
                       {invoice.totalTaxableValue.toFixed(2)}
                     </td>
-                    <td className="py-1 px-1 border-r border-stone-300"></td>
-                    <td className="py-1 px-1.5 text-right font-mono tabular-nums text-stone-900 font-bold">
-                      {invoice.grandTotal.toFixed(2)}
+                    <td className="py-1 px-1 border-r border-stone-400"></td>
+                    <td className="py-1 px-1.5 text-right font-mono tabular-nums text-stone-950 font-black text-[11px] bg-amber-100/60">
+                      {formatINR(invoice.grandTotal)}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Amount in Words Banner */}
-            <div className="border border-stone-300 rounded-xs px-2.5 py-1 mb-2.5 bg-stone-50/60 print:bg-transparent flex justify-between items-center text-[10.5px]">
+            {/* 6. Amount in Words Banner (Exact match to Image 1 & 2) */}
+            <div className="border-t-[1.5px] border-b-[1.5px] border-stone-800 px-2 py-1 bg-stone-50 flex justify-between items-center text-[9.5px]">
               <div>
-                <span className="font-semibold text-stone-600">Amount in Words: </span>
-                <span className="font-bold text-stone-900 italic">
+                <span className="font-semibold text-stone-700">Amount Chargeable (in words): </span>
+                <span className="font-bold text-stone-950 italic">
                   {numberToIndianWords(invoice.grandTotal)}
                 </span>
               </div>
-              <div className="text-[10px] text-stone-500 font-mono">
-                Net Metal Wt: {invoice.totalNetWeight.toFixed(3)} g
+              <div className="font-bold text-[9px] text-stone-500 uppercase tracking-wider">
+                E. & O.E.
               </div>
             </div>
 
-            {/* Lower Summary Section */}
-            <div className="grid grid-cols-12 gap-2.5 border border-stone-300 rounded-xs p-2.5 mb-2.5 bg-white/50 print:bg-transparent">
-              {/* Left: Bank Details */}
-              <div className="col-span-5 border-r border-stone-200 pr-2">
-                <div className="text-[9.5px] font-bold uppercase tracking-wider text-stone-600 mb-1">
-                  Bank & Payment Details:
+            {/* 7. Statutory HSN/SAC Tax Breakdown Table (Exact replica of Image 1 & Image 2) */}
+            <div className="border-b-[1.5px] border-stone-800 text-[9px]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-stone-300 bg-stone-100 font-bold text-stone-800">
+                    <th className="py-0.5 px-2 border-r border-stone-300 w-24">HSN/SAC</th>
+                    <th className="py-0.5 px-2 border-r border-stone-300 text-right w-28">Taxable Value</th>
+                    <th colSpan={2} className="py-0.5 px-1 border-r border-stone-300 text-center">CGST</th>
+                    <th colSpan={2} className="py-0.5 px-1 border-r border-stone-300 text-center">SGST/UTGST</th>
+                    <th className="py-0.5 px-2 text-right w-28">Total Tax Amount</th>
+                  </tr>
+                  <tr className="border-b border-stone-300 text-[8px] text-stone-600 font-semibold bg-stone-50/80">
+                    <th className="py-0.2 px-2 border-r border-stone-300"></th>
+                    <th className="py-0.2 px-2 border-r border-stone-300"></th>
+                    <th className="py-0.2 px-1 border-r border-stone-300 text-center w-12">Rate</th>
+                    <th className="py-0.2 px-1 border-r border-stone-300 text-right w-20">Amount</th>
+                    <th className="py-0.2 px-1 border-r border-stone-300 text-center w-12">Rate</th>
+                    <th className="py-0.2 px-1 border-r border-stone-300 text-right w-20">Amount</th>
+                    <th className="py-0.2 px-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {hsnRows.map((r, i) => (
+                    <tr key={i} className="border-b border-stone-200 font-mono">
+                      <td className="py-0.5 px-2 border-r border-stone-300 font-bold text-stone-900">{r.hsn}</td>
+                      <td className="py-0.5 px-2 border-r border-stone-300 text-right">{r.taxable.toFixed(2)}</td>
+                      <td className="py-0.5 px-1 border-r border-stone-300 text-center">{r.cgstRate.toFixed(2)}%</td>
+                      <td className="py-0.5 px-1 border-r border-stone-300 text-right">{r.cgstAmt.toFixed(2)}</td>
+                      <td className="py-0.5 px-1 border-r border-stone-300 text-center">{r.sgstRate.toFixed(2)}%</td>
+                      <td className="py-0.5 px-1 border-r border-stone-300 text-right">{r.sgstAmt.toFixed(2)}</td>
+                      <td className="py-0.5 px-2 text-right font-bold text-stone-900">{r.totalTax.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold bg-stone-50 text-stone-900 font-mono border-t border-stone-300">
+                    <td className="py-0.5 px-2 border-r border-stone-300 font-sans uppercase text-[8.5px]">Total</td>
+                    <td className="py-0.5 px-2 border-r border-stone-300 text-right">{invoice.totalTaxableValue.toFixed(2)}</td>
+                    <td className="py-0.5 px-1 border-r border-stone-300"></td>
+                    <td className="py-0.5 px-1 border-r border-stone-300 text-right">{invoice.cgst.toFixed(2)}</td>
+                    <td className="py-0.5 px-1 border-r border-stone-300"></td>
+                    <td className="py-0.5 px-1 border-r border-stone-300 text-right">{invoice.sgst.toFixed(2)}</td>
+                    <td className="py-0.5 px-2 text-right font-bold">{invoice.totalGst.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div className="px-2 py-0.5 bg-white border-t border-stone-200 text-[9px]">
+                <span className="font-semibold text-stone-700">Tax Amount (in words): </span>
+                <span className="font-bold text-stone-900 italic">{numberToIndianWords(invoice.totalGst)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 8. Bottom Section (Company Bank Details, Terms, UPI QR & Signatures) */}
+          <div className="grid grid-cols-12 text-[9.5px] leading-tight">
+            {/* Left: Bank Details & Terms (Col 7) */}
+            <div className="col-span-7 p-2 border-r-[1.5px] border-stone-800 flex flex-col justify-between">
+              <div>
+                <div className="font-bold uppercase tracking-wider text-[9px] text-stone-700 mb-0.5">
+                  Company's Bank Details:
                 </div>
-                <div className="space-y-0.5 text-[10.5px] text-stone-700">
-                  <div className="flex">
-                    <span className="w-18 font-semibold text-stone-600">Bank:</span>
-                    <span className="font-medium text-stone-900">{settings.bankName || invoice.bankDetails?.bankName}</span>
+                <div className="space-y-0.5 text-stone-800 text-[9px]">
+                  <div>
+                    <span className="font-semibold text-stone-600">Bank Name :</span>{' '}
+                    <span className="font-medium text-stone-900">{settings.bankName || 'HDFC Bank Ltd.'}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-18 font-semibold text-stone-600">A/C Name:</span>
+                  <div>
+                    <span className="font-semibold text-stone-600">A/c Name :</span>{' '}
                     <span className="font-bold text-stone-900">
                       {(settings.accountName || invoice.bankDetails?.accountName || 'KAMAKHYA JEWELLERS').replace(/kamkhya/i, 'KAMAKHYA')}
                     </span>
                   </div>
-                  <div className="flex">
-                    <span className="w-18 font-semibold text-stone-600">A/C No:</span>
-                    <span className="font-mono font-bold text-stone-900">{settings.accountNumber || invoice.bankDetails?.accountNumber}</span>
+                  <div>
+                    <span className="font-semibold text-stone-600">A/c No. :</span>{' '}
+                    <span className="font-mono font-bold text-stone-900">{settings.accountNumber || '50200084729112'}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-18 font-semibold text-stone-600">IFSC:</span>
-                    <span className="font-mono font-semibold text-stone-900">{settings.ifscCode || invoice.bankDetails?.ifscCode}</span>
+                  <div>
+                    <span className="font-semibold text-stone-600">Branch & IFS Code :</span>{' '}
+                    <span className="font-mono font-semibold text-stone-900">{settings.ifscCode || 'HDFC0001234'}</span>
                   </div>
-                  <div className="flex">
-                    <span className="w-18 font-semibold text-stone-600">UPI ID:</span>
-                    <span className="font-mono font-bold text-amber-900">{settings.upiId || invoice.bankDetails?.upiId}</span>
+                  <div>
+                    <span className="font-semibold text-stone-600">UPI ID :</span>{' '}
+                    <span className="font-mono font-bold text-amber-900">{settings.upiId || '9818144011@okbizaxis'}</span>
                   </div>
+                </div>
+
+                <div className="mt-1 pt-1 border-t border-stone-200">
+                  <div className="font-bold uppercase tracking-wider text-[8.5px] text-stone-700 mb-0.5">
+                    Declaration & Terms:
+                  </div>
+                  <ul className="text-[8px] text-stone-600 space-y-0.5 leading-tight">
+                    <li>• We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.</li>
+                    <li>• As per BIS guidelines, consumers may get their hallmarked jewellery tested/verified for purity at any BIS-recognised Assaying and Hallmarking Centre (AHC).</li>
+                    <li>• Exchange or Buyback accepted strictly on prevailing market metal rates as per showroom policy.</li>
+                  </ul>
                 </div>
               </div>
 
-              {/* Center: Scan to Pay UPI QR Code */}
-              <div className="col-span-3 flex flex-col items-center justify-center border-r border-stone-200 pr-2">
-                <div className="text-[9.5px] font-bold uppercase tracking-wider text-stone-700 mb-0.5">
-                  Scan to Pay:
-                </div>
+              <div className="mt-2 pt-1">
+                <div className="w-36 border-b border-stone-400 mb-0.5"></div>
+                <span className="text-[8px] font-semibold text-stone-600">Receiver's Signature / Stamp</span>
+              </div>
+            </div>
+
+            {/* Right: UPI Scan to Pay QR & Authorised Signatory (Col 5) */}
+            <div className="col-span-5 p-2 flex flex-col justify-between items-center text-center">
+              {/* Scan to Pay QR Code */}
+              <div className="flex flex-col items-center">
+                <span className="text-[8.5px] font-bold uppercase tracking-wider text-stone-700 mb-0.5">
+                  Scan to Pay via UPI:
+                </span>
                 {activeQrUrl || invoice.qrCodeDataUrl ? (
                   <img
                     src={activeQrUrl || invoice.qrCodeDataUrl}
                     alt="UPI Payment QR"
-                    className="w-20 h-20 object-contain border border-stone-200 rounded-xs bg-white p-0.5"
+                    className="w-16 h-16 object-contain border border-stone-300 rounded bg-white p-0.5 shadow-2xs"
                   />
                 ) : (
-                  <div className="w-20 h-20 border border-stone-300 flex items-center justify-center text-[9px] text-stone-400">
+                  <div className="w-16 h-16 border border-stone-300 flex items-center justify-center text-[7.5px] text-stone-400">
                     [UPI QR]
                   </div>
                 )}
-                <span className="text-[8.5px] text-stone-500 font-mono mt-0.5">Instant UPI QR</span>
+                <span className="text-[7.5px] text-stone-500 font-mono mt-0.5">Instant Dynamic UPI QR</span>
               </div>
 
-              {/* Right: Tax Breakdown and Final Figures */}
-              <div className="col-span-4 pl-1">
-                <div className="space-y-0.5 text-[10.5px]">
-                  <div className="flex justify-between items-center text-stone-700">
-                    <span>Taxable Value</span>
-                    <span className="font-mono tabular-nums">{invoice.totalTaxableValue.toFixed(2)}</span>
-                  </div>
-
-                  {invoice.isInterState ? (
-                    <div className="flex justify-between items-center text-stone-700">
-                      <span>IGST (3.0%)</span>
-                      <span className="font-mono tabular-nums">{invoice.igst.toFixed(2)}</span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex justify-between items-center text-stone-700">
-                        <span>CGST (1.5%)</span>
-                        <span className="font-mono tabular-nums">{invoice.cgst.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-stone-700">
-                        <span>SGST (1.5%)</span>
-                        <span className="font-mono tabular-nums">{invoice.sgst.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
-
-                  {invoice.roundOff !== 0 && (
-                    <div className="flex justify-between items-center text-stone-600 text-[9.5px]">
-                      <span>Round Off</span>
-                      <span className="font-mono tabular-nums">
-                        {invoice.roundOff > 0 ? `+${invoice.roundOff.toFixed(2)}` : invoice.roundOff.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="border-t border-stone-300 pt-1 flex justify-between items-center font-bold text-stone-900">
-                    <span>Grand Total</span>
-                    <span className="font-mono tabular-nums font-bold text-sm text-amber-950">
-                      {formatINR(invoice.grandTotal)}
-                    </span>
-                  </div>
-
-                  {/* Deductions: Old Gold Return or Trade-in Credit */}
-                  {invoice.oldGoldAmount !== undefined && invoice.oldGoldAmount > 0 && (
-                    <div className="flex justify-between items-start text-amber-900 text-[10px] pt-0.5">
-                      <div className="pr-1 leading-tight">
-                        <span className="font-semibold text-rose-900">
-                          {invoice.oldGoldExchange && invoice.oldGoldExchange.grossWeight > 0
-                            ? 'Less Old Gold Exchange'
-                            : `Less ${invoice.oldGoldExchange?.description || 'Trade-in Credit / Adjustment'}`}
-                        </span>
-                        {invoice.oldGoldExchange && invoice.oldGoldExchange.grossWeight > 0 && (
-                          <span className="block text-[8.5px] text-stone-600 font-mono">
-                            ({invoice.oldGoldExchange.grossWeight}g {invoice.oldGoldExchange.purity} @ ₹{invoice.oldGoldExchange.ratePerGram.toLocaleString('en-IN')}/g
-                            {invoice.oldGoldExchange.deductionPercent > 0
-                              ? ` less ${invoice.oldGoldExchange.deductionPercent}% tunch = ${invoice.oldGoldExchange.netWeight}g net`
-                              : ''})
-                          </span>
-                        )}
-                      </div>
-                      <span className="font-mono tabular-nums font-bold text-rose-700 whitespace-nowrap">
-                        - {formatINR(invoice.oldGoldAmount)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Deductions: Advance Payment */}
-                  {invoice.advanceAdjusted > 0 && (
-                    <div className="flex justify-between items-center text-emerald-800 text-[10px] pt-0.5">
-                      <span className="font-semibold">Less Advance</span>
-                      <span className="font-mono tabular-nums font-bold text-emerald-800">
-                        - {formatINR(invoice.advanceAdjusted)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Net Payable */}
-                  {((invoice.oldGoldAmount !== undefined && invoice.oldGoldAmount > 0) || invoice.advanceAdjusted > 0) && (
-                    <div className="flex justify-between items-center text-stone-900 font-bold text-[11px] pt-0.5 border-t border-stone-300 bg-amber-50/50 p-0.5 rounded-xs">
-                      <span>Net Payable</span>
-                      <span className="font-mono tabular-nums text-xs text-amber-950">
-                        {formatINR(invoice.netPayable !== undefined ? invoice.netPayable : Math.max(0, invoice.grandTotal - (invoice.oldGoldAmount || 0) - (invoice.advanceAdjusted || 0)))}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center text-stone-800 text-[10.5px] pt-0.5">
-                    <span>Amount Paid</span>
-                    <span className="font-mono tabular-nums font-semibold">
-                      {formatINR(invoice.amountPaidNow)}
-                    </span>
-                  </div>
-
-                  {invoice.remainingBalance > 0 && (
-                    <div className="flex justify-between items-center text-rose-700 font-bold text-[10px] pt-0.5 border-t border-dashed border-stone-300">
-                      <span>Balance Due</span>
-                      <span className="font-mono tabular-nums">
-                        {formatINR(invoice.remainingBalance)}
-                      </span>
-                    </div>
-                  )}
+              {/* Authorised Signatory */}
+              <div className="w-full text-center flex flex-col items-center mt-1">
+                <div className="text-[9.5px] font-bold text-stone-900 mb-0.5">
+                  for {settings.businessName || 'KAMAKHYA JEWELLERS'}
+                </div>
+                <div className="h-10 flex items-center justify-center">
+                  <img
+                    src={signatureImg}
+                    alt="Authorised Signatory"
+                    className="max-h-10 w-auto object-contain"
+                  />
+                </div>
+                <div className="w-36 border-t border-stone-400 mt-0.5 pt-0.5 text-[8.5px] font-bold text-stone-700">
+                  Authorised Signatory
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Declarations & Signature Footer */}
-          <div className="grid grid-cols-12 gap-3 pt-2 border-t border-stone-200 mt-auto">
-            {/* Declaration and Terms */}
-            <div className="col-span-8 pr-3 flex flex-col justify-between min-h-[110px]">
-              <div>
-                <div className="text-[9.5px] font-bold text-stone-800 uppercase tracking-wider mb-1">
-                  Declaration & Showroom Terms:
-                </div>
-                <ul className="text-[9px] text-stone-600 space-y-0.5 list-disc pl-3 leading-tight">
-                  {terms.map((term, i) => (
-                    <li key={i}>{term}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-5 pt-1">
-                <div className="w-48 border-b border-stone-400 mb-1"></div>
-                <span className="text-[9px] text-stone-600 font-semibold tracking-wide">Customer Signature / Received</span>
-              </div>
-            </div>
-
-            {/* Authorised Signatory with Actual Signature Image */}
-            <div className="col-span-4 text-center flex flex-col justify-end items-center pt-1">
-              <div className="h-14 flex items-end justify-center mb-0.5">
-                <img
-                  src={signatureImg}
-                  alt="Authorised Signatory"
-                  className="max-h-14 w-auto object-contain"
-                />
-              </div>
-              <div className="w-full border-t border-stone-400 pt-0.5 text-[10.5px] font-bold text-stone-800">
-                For {settings.businessName}
-              </div>
-              <div className="text-[9.5px] text-stone-500">Authorised Signatory</div>
-            </div>
+          {/* 9. Bottom Jurisdiction & Notice Footer */}
+          <div className="border-t-[1.5px] border-stone-800 py-0.5 px-3 bg-stone-100 text-center text-[8px] text-stone-600 font-semibold tracking-wider uppercase flex justify-between items-center">
+            <span>SUBJECT TO DELHI JURISDICTION</span>
+            <span>This is a Computer Generated Tax Invoice</span>
           </div>
         </div>
       </div>

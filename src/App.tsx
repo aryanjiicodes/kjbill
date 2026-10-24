@@ -116,12 +116,12 @@ export default function App() {
     }
   };
 
-  // Background recurring timer (every 5 to 10 mins) with safe rate-limiting
+  // Background recurring timer (every 1 minute) with safe rate-limiting
   useEffect(() => {
-    const intervalMinutes = rates.autoSyncIntervalMinutes || 5;
+    const intervalMinutes = rates.autoSyncIntervalMinutes || 1;
     if (rates.rateMode === 'manual' || intervalMinutes <= 0) return;
 
-    const intervalMs = Math.max(5, intervalMinutes) * 60 * 1000;
+    const intervalMs = Math.max(1, intervalMinutes) * 60 * 1000;
 
     const timer = setInterval(() => {
       if (document.visibilityState === 'visible') {

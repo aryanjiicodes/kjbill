@@ -66,6 +66,10 @@ export const InvoiceForm: React.FC<Props> = ({
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
 
+  // Capture latest rates at the instant the user starts creating the bill.
+  // Kept frozen throughout this billing session so background sync doesn't reset or alter prices mid-entry.
+  const [billingRates, setBillingRates] = useState<MetalRates>(() => ({ ...rates }));
+
   // WhatsApp billing destination
   const [whatsappMobile, setWhatsappMobile] = useState('');
   const [showWhatsAppPreview, setShowWhatsAppPreview] = useState(false);
@@ -125,7 +129,8 @@ export const InvoiceForm: React.FC<Props> = ({
   const [amountPaidNow, setAmountPaidNow] = useState<number>(0);
   const [paidManuallyEdited, setPaidManuallyEdited] = useState(false);
 
-  // Initialize Invoice number and initial row
+  // Initialize Invoice number and initial row ONCE on mount
+  // (Dependencies are empty so background sync NEVER wipes or resets user inputs!)
   useEffect(() => {
     const nextNum = StorageService.generateNextInvoiceNumber();
     setInvoiceNumber(nextNum);
@@ -148,7 +153,7 @@ export const InvoiceForm: React.FC<Props> = ({
       gstRate: 3,
     });
     setItems([defaultItem]);
-  }, [rates]);
+  }, []);
 
   // Customer search filtering
   const filteredCustomers = customers.filter(
@@ -241,12 +246,12 @@ export const InvoiceForm: React.FC<Props> = ({
   // Update default old gold rate if purity changes
   const handleOldGoldPurityChange = (purity: string) => {
     setOldGoldPurity(purity);
-    if (purity === '24K') setOldGoldRatePerGram(rates.gold24k);
-    else if (purity === '22K') setOldGoldRatePerGram(rates.gold22k);
-    else if (purity === '18K') setOldGoldRatePerGram(rates.gold18k);
-    else if (purity === '14K') setOldGoldRatePerGram(rates.gold14k);
-    else if (purity === 'Silver' || purity === '999 Silver') setOldGoldRatePerGram(rates.silver999);
-    else if (purity === '925 Silver') setOldGoldRatePerGram(rates.silver925);
+    if (purity === '24K') setOldGoldRatePerGram(billingRates.gold24k);
+    else if (purity === '22K') setOldGoldRatePerGram(billingRates.gold22k);
+    else if (purity === '18K') setOldGoldRatePerGram(billingRates.gold18k);
+    else if (purity === '14K') setOldGoldRatePerGram(billingRates.gold14k);
+    else if (purity === 'Silver' || purity === '999 Silver') setOldGoldRatePerGram(billingRates.silver999);
+    else if (purity === '925 Silver') setOldGoldRatePerGram(billingRates.silver925);
   };
 
   // Item modification helpers
@@ -260,15 +265,15 @@ export const InvoiceForm: React.FC<Props> = ({
       if (updates.metalType && updates.metalType !== current.metalType) {
         if (updates.metalType === 'Gold') {
           merged.purity = '22K';
-          merged.ratePerGram = rates.gold22k;
+          merged.ratePerGram = billingRates.gold22k;
           merged.hsnCode = '711319';
         } else if (updates.metalType === 'Silver') {
           merged.purity = updates.purity || 'Silver';
-          merged.ratePerGram = rates.silver999;
+          merged.ratePerGram = billingRates.silver999;
           merged.hsnCode = '711311';
         } else if (updates.metalType === 'Platinum') {
           merged.purity = 'Pt 950';
-          merged.ratePerGram = rates.platinum;
+          merged.ratePerGram = billingRates.platinum;
           merged.hsnCode = '711319';
         } else {
           merged.purity = 'Standard';
@@ -281,16 +286,16 @@ export const InvoiceForm: React.FC<Props> = ({
         const m = current.metalType;
         const p = updates.purity;
         if (m === 'Gold') {
-          if (p === '24K') merged.ratePerGram = rates.gold24k;
-          else if (p === '22K') merged.ratePerGram = rates.gold22k;
-          else if (p === '18K') merged.ratePerGram = rates.gold18k;
-          else if (p === '14K') merged.ratePerGram = rates.gold14k;
+          if (p === '24K') merged.ratePerGram = billingRates.gold24k;
+          else if (p === '22K') merged.ratePerGram = billingRates.gold22k;
+          else if (p === '18K') merged.ratePerGram = billingRates.gold18k;
+          else if (p === '14K') merged.ratePerGram = billingRates.gold14k;
           merged.hsnCode = '711319';
         } else if (m === 'Silver') {
-          if (p === '999') merged.ratePerGram = rates.silver999;
-          else if (p === '925') merged.ratePerGram = rates.silver925;
-          else if (p === 'Silver') merged.ratePerGram = rates.silver999;
-          else merged.ratePerGram = rates.silver925;
+          if (p === '999') merged.ratePerGram = billingRates.silver999;
+          else if (p === '925') merged.ratePerGram = billingRates.silver925;
+          else if (p === 'Silver') merged.ratePerGram = billingRates.silver999;
+          else merged.ratePerGram = billingRates.silver925;
           merged.hsnCode = '711311';
         }
       }
@@ -319,7 +324,7 @@ export const InvoiceForm: React.FC<Props> = ({
       stoneWeight: 0,
       stoneRate: 0,
       stoneCharges: 0,
-      ratePerGram: rates.gold22k,
+      ratePerGram: billingRates.gold22k,
       makingChargeType: 'per_gram',
       makingChargeRate: 200,
       gstRate: 3,

@@ -11,7 +11,7 @@ import {
 } from '../types';
 
 export const defaultSettings: ShopSettings = {
-  businessName: 'कामाख्या ज्वैलर्स (छपरा-सिवान वाले)',
+  businessName: 'KAMAKHYA JEWELLERS',
   ownerName: 'DHANANJAY VERMA',
   address: 'A-123, Ganpati Market, New Ashok Nagar, Delhi – 110096, India',
   mobile: '9818144011',
@@ -178,8 +178,6 @@ export const defaultInvoices: Invoice[] = [
       {
         id: 'item_1',
         productName: '22K Gold Handcrafted Ring with Ruby',
-        itemCode: 'KJ-RNG-01',
-        huid: 'KJ916A',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',
@@ -202,7 +200,6 @@ export const defaultInvoices: Invoice[] = [
       {
         id: 'item_2',
         productName: '925 Sterling Silver Traditional Payal (Anklet)',
-        itemCode: 'KJ-PYL-01',
         metalType: 'Silver',
         purity: '925',
         hsnCode: '711311',
@@ -225,8 +222,6 @@ export const defaultInvoices: Invoice[] = [
       {
         id: 'item_3',
         productName: '22K Hallmarked Floral Bridal Necklace',
-        itemCode: 'KJ-NCK-01',
-        huid: 'KJ916B',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',
@@ -249,8 +244,6 @@ export const defaultInvoices: Invoice[] = [
       {
         id: 'item_4',
         productName: '22K Hallmarked Gold Traditional Jhumka Earrings',
-        itemCode: 'KJ-JMK-02',
-        huid: 'KJ916C',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',
@@ -275,7 +268,6 @@ export const defaultInvoices: Invoice[] = [
       {
         id: 'item_5',
         productName: '925 Sterling Silver Italian Figaro Chain',
-        itemCode: 'KJ-CHN-05',
         metalType: 'Silver',
         purity: '925',
         hsnCode: '711311',
@@ -298,8 +290,6 @@ export const defaultInvoices: Invoice[] = [
       {
         id: 'item_6',
         productName: '22K Hallmarked Gold Handcrafted Kada Bracelet',
-        itemCode: 'KJ-KDA-03',
-        huid: 'KJ916D',
         metalType: 'Gold',
         purity: '22K',
         hsnCode: '711319',

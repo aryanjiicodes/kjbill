@@ -126,6 +126,9 @@ export const StorageService = {
     if (merged.accountName && /kamkhya/i.test(merged.accountName)) {
       merged.accountName = 'KAMAKHYA JEWELLERS';
     }
+    if (!merged.businessName || /कामाख्या/i.test(merged.businessName)) {
+      merged.businessName = 'KAMAKHYA JEWELLERS';
+    }
     return merged;
   },
 

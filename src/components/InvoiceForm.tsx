@@ -135,11 +135,9 @@ export const InvoiceForm: React.FC<Props> = ({
     const nextNum = StorageService.generateNextInvoiceNumber();
     setInvoiceNumber(nextNum);
 
-    // Initial item row with professional description & voluntary BIS HUID trust badge
+    // Initial item row
     const defaultItem = calculateItemRow({
       productName: '22K Gold Handcrafted Ring with Ruby',
-      itemCode: 'KJ-RNG-01',
-      huid: 'KJ916A',
       metalType: 'Gold',
       purity: '22K',
       hsnCode: '711319',
@@ -850,9 +848,9 @@ export const InvoiceForm: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Grid Section 1: Item Name, Tag, BIS HUID, Metal, Purity & HSN */}
+                {/* Grid Section 1: Item Name, Metal, Purity */}
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  <div className="sm:col-span-4">
+                  <div className="sm:col-span-6">
                     <label className="text-xs font-bold text-stone-700 block mb-1">
                       Product Name / Description *
                     </label>
@@ -866,35 +864,6 @@ export const InvoiceForm: React.FC<Props> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-bold text-stone-700 block mb-1">
-                      Tag / Item Code
-                    </label>
-                    <input
-                      type="text"
-                      value={item.itemCode || ''}
-                      onChange={(e) => handleItemChange(idx, { itemCode: e.target.value.toUpperCase() })}
-                      placeholder="e.g. KJ-RNG-01"
-                      className="w-full px-2.5 py-2 text-xs font-mono font-semibold bg-stone-50 border border-stone-300 rounded-lg focus:outline-none focus:border-amber-600 uppercase"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-bold text-amber-950 block mb-1 flex items-center justify-between">
-                      <span>BIS HUID</span>
-                      <span className="text-[9.5px] font-normal text-amber-700">6-Char</span>
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      value={item.huid || ''}
-                      onChange={(e) => handleItemChange(idx, { huid: e.target.value.toUpperCase() })}
-                      placeholder="e.g. KJ916A"
-                      className="w-full px-2.5 py-2 text-xs font-mono font-bold text-amber-900 bg-amber-50/50 border border-amber-300 rounded-lg focus:outline-none focus:border-amber-600 uppercase"
-                      title="Voluntary 6-character alphanumeric BIS Hallmark Unique Identification code"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-1">
                     <label className="text-xs font-bold text-stone-700 block mb-1">Metal</label>
                     <select
                       value={item.metalType}
@@ -910,7 +879,7 @@ export const InvoiceForm: React.FC<Props> = ({
                     </select>
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div className="sm:col-span-4">
                     <label className="text-xs font-bold text-stone-700 block mb-1">Purity (Fineness)</label>
                     <select
                       value={item.purity}
@@ -1210,24 +1179,6 @@ export const InvoiceForm: React.FC<Props> = ({
                         placeholder="e.g. 22K Gold Handcrafted Ring with Ruby"
                         className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-md text-xs font-semibold focus:outline-none focus:border-amber-600"
                       />
-                      <div className="grid grid-cols-2 gap-1.5 mt-1">
-                        <input
-                          type="text"
-                          value={item.itemCode || ''}
-                          onChange={(e) => handleItemChange(idx, { itemCode: e.target.value.toUpperCase() })}
-                          placeholder="Tag / SKU #"
-                          className="px-1.5 py-0.5 text-[10px] font-mono bg-stone-50 border border-stone-200 rounded focus:outline-none uppercase"
-                        />
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={item.huid || ''}
-                          onChange={(e) => handleItemChange(idx, { huid: e.target.value.toUpperCase() })}
-                          placeholder="BIS HUID"
-                          className="px-1.5 py-0.5 text-[10px] font-mono font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded focus:outline-none uppercase"
-                          title="Voluntary BIS Hallmark Unique ID"
-                        />
-                      </div>
                     </td>
 
                     <td className="py-3 px-2">

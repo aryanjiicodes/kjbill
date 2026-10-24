@@ -648,9 +648,6 @@ export const AdvanceDepositView: React.FC<Props> = ({
                       <h1 className="text-2xl sm:text-3xl font-serif font-extrabold tracking-wider text-stone-900 mt-0.5 mb-0.5 uppercase">
                         KAMAKHYA JEWELLERS
                       </h1>
-                      <div className="text-[11.5px] font-serif text-amber-950 font-bold mb-0.5">
-                        कामाख्या ज्वैलर्स (छपरा-सिवान वाले)
-                      </div>
                       <p className="text-[10.5px] text-stone-600 max-w-md mx-auto leading-normal">
                         {settings.address}
                       </p>

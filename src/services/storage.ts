@@ -138,7 +138,15 @@ export const StorageService = {
   },
 
   getRates(): MetalRates {
-    return getStored<MetalRates>(STORAGE_KEYS.RATES, defaultRates);
+    const stored = getStored<MetalRates>(STORAGE_KEYS.RATES, defaultRates);
+    const merged = { ...defaultRates, ...stored };
+    if (!merged.autoSyncIntervalMinutes || merged.autoSyncIntervalMinutes > 2) {
+      merged.autoSyncIntervalMinutes = 1;
+    }
+    if (!merged.rateMode || merged.rateMode === 'manual') {
+      merged.rateMode = 'api';
+    }
+    return merged;
   },
 
   getRateHistory(): MetalRateHistoryEntry[] {

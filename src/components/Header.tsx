@@ -163,18 +163,18 @@ export const Header: React.FC<Props> = ({
           })()}
           {rates.rateMode !== 'manual' && (
             <span
-              className="hidden lg:inline-flex items-center gap-1 text-[10px] text-stone-400 bg-stone-900/90 px-2 py-0.5 rounded-full border border-stone-800"
-              title={`Auto-polls Custom Gold API safely every ${rates.autoSyncIntervalMinutes || 5} minutes without hitting server limits`}
+              className="hidden lg:inline-flex items-center gap-1 text-[10px] text-stone-300 bg-stone-900/90 px-2 py-0.5 rounded-full border border-stone-750"
+              title={`Auto-polls Custom Gold API safely every ${rates.autoSyncIntervalMinutes || 1} minute without hitting server limits`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Auto ({rates.autoSyncIntervalMinutes || 5}m)</span>
+              <span>Auto ({rates.autoSyncIntervalMinutes || 1}m)</span>
             </span>
           )}
           {onSyncRates && (
             <button
               onClick={onSyncRates}
               disabled={isSyncingRates}
-              className="ml-2 flex items-center gap-1 px-2 py-0.5 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white rounded text-[10px] font-medium border border-stone-700 transition-colors"
+              className="ml-2 flex items-center gap-1 px-2.5 py-0.5 bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 hover:text-white rounded text-[10px] font-semibold border border-amber-500/40 transition-colors"
               title="Sync latest live prices from Custom Gold API"
             >
               <RefreshCw className={`w-3 h-3 ${isSyncingRates ? 'animate-spin text-amber-400' : ''}`} />

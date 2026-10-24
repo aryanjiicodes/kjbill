@@ -18,7 +18,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
   const currentRates = rates || StorageService.getRates();
   const [rateMode, setRateMode] = useState<'api' | 'manual'>(currentRates.rateMode || 'api');
   const [apiSource, setApiSource] = useState<'default' | 'ibja'>(currentRates.apiSource || 'default');
-  const [autoSyncIntervalMinutes, setAutoSyncIntervalMinutes] = useState<number>(currentRates.autoSyncIntervalMinutes || 5);
+  const [autoSyncIntervalMinutes, setAutoSyncIntervalMinutes] = useState<number>(currentRates.autoSyncIntervalMinutes || 1);
   const [gold24k, setGold24k] = useState<number>(currentRates.gold24k || 14920);
   const [gold22k, setGold22k] = useState<number>(currentRates.gold22k || 13677);
   const [gold18k, setGold18k] = useState<number>(currentRates.gold18k || 11190);
@@ -40,7 +40,7 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
     if (rates) {
       setRateMode(rates.rateMode || 'api');
       setApiSource(rates.apiSource || 'default');
-      setAutoSyncIntervalMinutes(rates.autoSyncIntervalMinutes || 5);
+      setAutoSyncIntervalMinutes(rates.autoSyncIntervalMinutes || 1);
       setGold24k(rates.gold24k);
       setGold22k(rates.gold22k);
       setGold18k(rates.gold18k);
@@ -401,12 +401,13 @@ export const SettingsView: React.FC<Props> = ({ settings, rates, onRefresh }) =>
                       </span>
                       <select
                         value={autoSyncIntervalMinutes}
-                        onChange={(e) => setAutoSyncIntervalMinutes(parseInt(e.target.value) || 5)}
+                        onChange={(e) => setAutoSyncIntervalMinutes(parseInt(e.target.value) || 1)}
                         className="px-2.5 py-1 text-xs bg-white border border-emerald-300 rounded-lg font-medium text-stone-800 focus:outline-none"
                       >
-                        <option value="5">Every 5 Minutes (Recommended)</option>
+                        <option value="1">Every 1 Minute (Recommended for Live Showroom)</option>
+                        <option value="2">Every 2 Minutes</option>
+                        <option value="5">Every 5 Minutes</option>
                         <option value="10">Every 10 Minutes</option>
-                        <option value="15">Every 15 Minutes</option>
                         <option value="0">Disabled (Manual Only)</option>
                       </select>
                     </div>

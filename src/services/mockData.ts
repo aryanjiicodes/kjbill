@@ -50,7 +50,7 @@ export const defaultRates: MetalRates = {
   silver999: 92,
   silver925: 86,
   platinum: 3200,
-  rateMode: 'manual',
+  rateMode: 'api',
   autoSyncIntervalMinutes: 1,
   updatedAt: new Date().toISOString(),
   updatedBy: 'DHANANJAY VERMA',

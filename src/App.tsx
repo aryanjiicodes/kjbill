@@ -70,13 +70,13 @@ export default function App() {
     if (isSyncingRates) return;
 
     const current = StorageService.getRates();
-    if (current.rateMode === 'manual') return;
+    if (isBackground && current.rateMode === 'manual') return;
 
     // In background auto-call, skip if already refreshed recently
-    const intervalMinutes = current.autoSyncIntervalMinutes || 5;
+    const intervalMinutes = current.autoSyncIntervalMinutes || 1;
     if (isBackground && current.updatedAt) {
       const elapsedMs = Date.now() - new Date(current.updatedAt).getTime();
-      if (!isNaN(elapsedMs) && elapsedMs < (intervalMinutes * 60 * 1000) - 20000) {
+      if (!isNaN(elapsedMs) && elapsedMs < (intervalMinutes * 60 * 1000) - 15000) {
         return;
       }
     }
